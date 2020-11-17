@@ -15,3 +15,6 @@ Use of parameters:
 
 Make sure you adjust the bar atleast once before you RIGHT-CLICK on the window.
 
+cmake .
+make
+./output_filename

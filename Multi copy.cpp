@@ -11,6 +11,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <string>
 
 #include <iterator>
 #include <algorithm>
@@ -47,9 +48,10 @@ int main(int argc, char** argv)
 	for(int i = 0; i < x; ++i) {
         points.push_back(dt::Vector2<double>{4.33, 2.13});
 	}
+
     dt::Delaunay<double> triangulation;
 	const auto start = std::chrono::high_resolution_clock::now();
-	const std::vector<dt::Triangle<double>> triangles = triangulation.triangulate();
+	const std::vector<dt::Triangle<double>> triangles = triangulation.triangulate(points);
 	const auto end = std::chrono::high_resolution_clock::now();
 	const std::chrono::duration<double> diff = end - start;
 
