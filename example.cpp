@@ -119,18 +119,19 @@ int main(int argc, char** argv)
     // To run: ./metis_example
     ///////////////////////////////////////////////////////////////
 
-    idx_t nVertices = 6;
+    idx_t nVertices = 7;
     idx_t nElements = 5;
     idx_t nParts = 2;
 
-    idx_t objval, epart;
+    idx_t objval;
+    std::vector<idx_t> epart(nElements, 0);
     std::vector<idx_t> npart(nVertices, 0);
 
     // Indexes of starting points in adjacent array
     std::vector<idx_t> eptr = {5,0,3,6,9,12};
 
     // Adjacent vertices in consecutive index order
-    std::vector<idx_t> eind = {1,2,4,4,2,3,5,3,4,5,4,1,5,1,6};
+    std::vector<idx_t> eind = {0,1,2,0,6,2,5,4,6,2,4,6,4,2,3};
 
     // if all weights are equal then can be set to NULL
     // std::vector<idx_t> vwgt(nVertices * nWeights, 0);
@@ -150,9 +151,12 @@ int main(int argc, char** argv)
 
     int ret2 = METIS_PartMeshNodal( 
       &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
-      &nParts, NULL, NULL, &objval, &epart, npart.data());
+      &nParts, NULL, NULL, &objval, epart.data(), npart.data());
 
-    std::cout << epart << std::endl;
+    for(unsigned part_i = 0; part_i < epart.size(); part_i++){
+      cout << "EPart" << process_Rank << ":";
+	    std::cout << part_i << " " << epart[part_i] << std::endl;
+    }
 
     for(unsigned part_i = 0; part_i < npart.size(); part_i++){
       cout << process_Rank << ":";

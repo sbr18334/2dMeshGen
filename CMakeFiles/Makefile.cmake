@@ -64,6 +64,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/local/lib/cmake/CGAL/CGAL_target_use_TBB.cmake"
   "/usr/local/lib/cmake/CGAL/FindGMP.cmake"
   "/usr/local/lib/cmake/CGAL/FindGMPXX.cmake"
+  "/usr/local/lib/cmake/CGAL/FindMETIS.cmake"
   "/usr/local/lib/cmake/CGAL/FindMPFR.cmake"
   "/usr/local/lib/cmake/CGAL/UseCGAL.cmake"
   "/usr/local/lib/cmake/boost_headers-1.74.0/boost_headers-config-version.cmake"
