@@ -97,19 +97,9 @@ int main(int argc, char** argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size_Of_Cluster);
     MPI_Comm_rank(MPI_COMM_WORLD, &process_Rank);
     
-    // cout << process_Rank << endl;
-    if(process_Rank == 0){
-        message_Item = 42;
-        MPI_Send(&message_Item, 1, MPI_INT, 1, 1, MPI_COMM_WORLD);
-        printf("Message Sent from Process: %d %d\n", process_Rank, message_Item);
-    }
 
-    else if(process_Rank == 1){
-        MPI_Recv(&message_Item, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("Message Received to Process: %d %d\n", process_Rank, message_Item);
-    }
 
-    MPI_Finalize();
+    // MPI_Finalize();
 
     ////////////////////////////////////////////////////////////////
     // metis example
@@ -126,6 +116,7 @@ int main(int argc, char** argv)
     idx_t objval;
     std::vector<idx_t> epart(nElements, 0);
     std::vector<idx_t> npart(nVertices, 0);
+    std::vector<idx_t> recpart(nVertices, 0);
 
     // Indexes of starting points in adjacent array
     std::vector<idx_t> eptr = {5,0,3,6,9,12};
@@ -162,6 +153,22 @@ int main(int argc, char** argv)
       cout << process_Rank << ":";
 	    std::cout << part_i << " " << npart[part_i] << std::endl;
     }
+
+    // cout << process_Rank << endl;
+
+    int arr[] = {2,3,4,5};
+    if(process_Rank == 0){
+        message_Item = 42;
+        MPI_Send(arr, 4, MPI_INT, 1, 1, MPI_COMM_WORLD);
+        printf("Message Sent from Process: %d %d\n", process_Rank,*arr);
+    }
+
+    else if(process_Rank == 1){
+        MPI_Recv(arr, 4, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("Message Received to Process: %d %d\n", process_Rank, *arr+1);
+    }
+
+    MPI_Finalize();
 
   return 0;
 }
