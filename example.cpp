@@ -8,9 +8,7 @@
 #include <fstream>
 
 #include <mpi.h>
-// #include "/usr/local/opt/metis/include/metis.h"
 #include <metis.h>
-// #include "metis/kmetis.c"
 
 // To compile and run
 // mpic++ -std=c++11 example.cpp -lmetis
@@ -82,8 +80,6 @@ int main(int argc, char** argv)
     // add metis
     // add mpi codes and compilation tags
 
-    // cout << "MPI" << endl;
-
     ////////////////////////////////////////////////////////////////
     // mpi process
     // message between and parallelization between threads
@@ -96,10 +92,6 @@ int main(int argc, char** argv)
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &size_Of_Cluster);
     MPI_Comm_rank(MPI_COMM_WORLD, &process_Rank);
-    
-
-
-    // MPI_Finalize();
 
     ////////////////////////////////////////////////////////////////
     // metis example
@@ -109,6 +101,9 @@ int main(int argc, char** argv)
     // To run: ./metis_example
     ///////////////////////////////////////////////////////////////
 
+    ///////////////////////////////////////////////////////////////
+    // partmeshNodal
+    ///////////////////////////////////////////////////////////////
     idx_t nVertices = 7;
     idx_t nElements = 5;
     idx_t nParts = 2;
@@ -118,27 +113,9 @@ int main(int argc, char** argv)
     std::vector<idx_t> npart(nVertices, 0);
     std::vector<idx_t> recpart(nVertices, 0);
 
-    // Indexes of starting points in adjacent array
     std::vector<idx_t> eptr = {5,0,3,6,9,12};
-
-    // Adjacent vertices in consecutive index order
+  
     std::vector<idx_t> eind = {0,1,2,0,6,2,5,4,6,2,4,6,4,2,3};
-
-    // if all weights are equal then can be set to NULL
-    // std::vector<idx_t> vwgt(nVertices * nWeights, 0);
-    
-    // int ret = METIS_PartGraphKway(&nVertices,& nWeights, xadj.data(), adjncy.data(),
-		// 		       NULL, NULL, NULL, &nParts, NULL,
-    //    				  NULL, NULL, &objval, part.data());
-
-    // std::cout << ret << std::endl;
-    
-    // for(unsigned part_i = 0; part_i < part.size(); part_i++){
-    //   cout << process_Rank << ":";
-	  //   std::cout << part_i << " " << part[part_i] << std::endl;
-    // }
-
-    // partmeshNodal
 
     int ret2 = METIS_PartMeshNodal( 
       &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
@@ -154,18 +131,36 @@ int main(int argc, char** argv)
 	    std::cout << part_i << " " << npart[part_i] << std::endl;
     }
 
-    // cout << process_Rank << endl;
 
-    int arr[] = {2,3,4,5};
+    ///////////////////////////////////////////////////////////////
+    // allocating partitioned data to processes
+    ///////////////////////////////////////////////////////////////
     if(process_Rank == 0){
-        message_Item = 42;
-        MPI_Send(arr, 4, MPI_INT, 1, 1, MPI_COMM_WORLD);
-        printf("Message Sent from Process: %d %d\n", process_Rank,*arr);
+      vector<int> partNodes;
+      vector<int> partElements;
+
+      for(unsigned part_i = 0; part_i < npart.size(); part_i++){
+        if(npart[part_i] == process_Rank) {
+          partNodes.push_back(part_i);
+        }
+        if(epart[part_i] == process_Rank) {
+          partElements.push_back(part_i);
+        }
+      }
     }
 
     else if(process_Rank == 1){
-        MPI_Recv(arr, 4, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("Message Received to Process: %d %d\n", process_Rank, *arr+1);
+      vector<int> partNodes;
+      vector<int> partElements;
+
+      for(unsigned part_i = 0; part_i < npart.size(); part_i++){
+        if(npart[part_i] == process_Rank) {
+          partNodes.push_back(part_i);
+        }
+        if(epart[part_i] == process_Rank) {
+          partElements.push_back(part_i);
+        }
+      }
     }
 
     MPI_Finalize();
