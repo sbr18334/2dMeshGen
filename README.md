@@ -1,11 +1,6 @@
 # ParallelMeshing
 
-
-################## Implementation of: ##################
-
-Paper Title:- 
-
-Authors:- 
+Authors:- Balchandar Reddy
 
 Operating system recommended:- Ubuntu 14.04 or newer/ macOS Sierra or higher
 
@@ -19,6 +14,6 @@ The program requires CGAL (tested with 4.7).
 
 Contact: Balchandar Reddy
 
-     E-mail: sbr18334@gmail.com
+E-mail: sbr18334@gmail.com
 
 ##################### Execution steps: ##########
