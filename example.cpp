@@ -57,13 +57,46 @@ float distance(int x1, int y1, int x2, int y2)
 { 
     // Calculating distance 
     return sqrt(pow(x2 - x1, 2) +  
-                pow(y2 - y1, 2) * 1.0); 
+                pow(y2 - y1, 2)); 
 } 
 
 float triangle_area(float a, float b, float c)
 {
   float p = (a+b+c)/2;
   return sqrt(p*(p-a)*(p-b)*(p-c));
+}
+
+float midPoint(float a, float b)
+{
+  return (a+b)/2;
+}
+
+int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
+{
+  int* arr = new int[2];
+  if((a1==b1 && a2 == b2) || (a1 == b2 && a2 == b1) || 
+     (a1==b2 && a2 == b3) || (a1 == b3 && a2 == b2) ||
+     (a1==b1 && a2 == b3) || (a1 == b3 && a2 == b1)) {
+      arr[0] = a1; arr[1] = a2;
+      return arr;
+  }
+  if((a3==b1 && a2 == b2) || (a3 == b2 && a2 == b1) || 
+     (a3==b2 && a2 == b3) || (a3 == b3 && a2 == b2) ||
+     (a3==b1 && a2 == b3) || (a3 == b3 && a2 == b1)) {
+      arr[0] = a2; arr[1] = a3;
+      return arr;
+  }
+  if((a1==b1 && a3 == b2) || (a1 == b2 && a3 == b1) || 
+     (a1==b2 && a3 == b3) || (a1 == b3 && a3 == b2) ||
+     (a1==b1 && a3 == b3) || (a1 == b3 && a3 == b1)) {
+      arr[0] = a1; arr[1] = a3;
+      return arr;
+  }
+  else {
+    arr[0] = -999;arr[1] = -999;
+    return arr;
+  }
+  
 }
 
 int main(int argc, char** argv)
@@ -147,8 +180,8 @@ int main(int argc, char** argv)
     ///////////////////////////////////////////////////////////////
     // partmeshNodal
     ///////////////////////////////////////////////////////////////
-    idx_t nVertices = 7;
-    idx_t nElements = 5;
+    idx_t nVertices = 8;
+    idx_t nElements = 8;
     idx_t nParts = 2;
 
     idx_t objval;
@@ -156,9 +189,9 @@ int main(int argc, char** argv)
     std::vector<idx_t> npart(nVertices, 0);
     std::vector<idx_t> recpart(nVertices, 0);
 
-    std::vector<idx_t> eptr = {5,0,3,6,9,12};
+    std::vector<idx_t> eptr = {8,0,3,6,9,12,15,18,21};
   
-    std::vector<idx_t> eind = {0,1,2,0,6,2,5,4,6,2,4,6,4,2,3};
+    std::vector<idx_t> eind = {0,4,5,4,5,6,4,6,7,4,7,3,0,4,3,0,1,3,1,2,3,2,3,7};
 
     int ret2 = METIS_PartMeshNodal( 
       &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
@@ -231,32 +264,60 @@ int main(int argc, char** argv)
           cout << ptr[0] << " " << ptr[1] << endl;
           //got circumcenter
 
+          //myedges
+          //otheredgeswithprocessid
+          //commonedgeswithprocessid
+
+          cout << "eind.length/3" << eind.size()/3 << endl;
+          //total no. of triangles
+          int triangleCount = eind.size()/3;
+          //complexity verify
+          std::vector<idx_t> edgeList;
+          for(int i=0;i<triangleCount;i++) {
+            if(epart[i] == process_Rank){
+              for(int j=0;j<triangleCount;j++) {
+                //check whether the triangles have a common edge
+                if(epart[j] != process_Rank){
+                  cout << eind[3*i] << eind[3*i+1] << eind[3*i+2] <<
+                                  eind[3*j] << eind[3*j+1] << eind[3*j+2] << endl;
+                  int* ptr2 = checkCommonEdge(eind[3*i],eind[3*i+1],eind[3*i+2],
+                                  eind[3*j],eind[3*j+1],eind[3*j+2]);
+                  cout << "cEdge[0]:" << ptr2[0] << endl;
+                  cout << "cEdge[1]:" << ptr2[1] << endl;
+                  if(!(ptr2[0] == -999 && ptr2[1] == -999)){
+                    edgeList.push_back(ptr2[0]);
+                    edgeList.push_back(ptr2[1]);
+                  }
+                }
+              }
+            }
+          }
+
+          for(int i=0;i<edgeList.size();i++) {
+            cout << i << ":" << edgeList[i] << endl;
+          }
+
           //find shared edges of this process with other processes
           //take common edges and check whether the circumcenter encroaches the segment
-
-          //if true
-          //send split messages
-          //local cavity
-
-          //else
-          //local cavity
+          for(int i=0;i<edgeList.size()/2;i++) {
+            float centerX = midPoint(points[2*i][0],points[2*i+1][0]);
+            float centerY = midPoint(points[2*i][1],points[2*i+1][1]);
+            float radius = distance(centerX,centerY,points[2*i][0],points[2*i][1]);
+            if(pow((ptr[0]-centerX),2)+pow((ptr[0]-centerX),2)-pow(radius,2) < 0) {
+              cout << "Encroaches" << endl;
+              // MPI
+              // Local cavity
+            } else {
+              cout << "Doesnot Encroaches" << endl;
+              // Local cavity
+            }
+          }
 
         }
 
-        // for(int j=0;j<points.size();j++) {
-        //   //iterate through all the points with robustpredicates
-        //   if(predicates::incircle(Px,Py, Qx,Qy, Rx,Ry, points[j][0],points[j][1])<0) {
-        //     //point lies inside the circle
-        //     //capture the point
-        //     cout << "Inside";
-        //     cout << j;
-        //     //send a split request, if the point belongs to other process
-            
-        //   }
-        // }
         cout << endl;
 
-      }
+      } // end of each bad triangle loop check
     }
 
     else if(process_Rank == 1){
