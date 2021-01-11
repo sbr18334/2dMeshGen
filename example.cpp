@@ -264,10 +264,7 @@ int main(int argc, char** argv)
           cout << ptr[0] << " " << ptr[1] << endl;
           //got circumcenter
 
-          //myedges
-          //otheredgeswithprocessid
-          //commonedgeswithprocessid
-
+          //commonedges with processid
           cout << "eind.length/3" << eind.size()/3 << endl;
           //total no. of triangles
           int triangleCount = eind.size()/3;
@@ -287,6 +284,7 @@ int main(int argc, char** argv)
                   if(!(ptr2[0] == -999 && ptr2[1] == -999)){
                     edgeList.push_back(ptr2[0]);
                     edgeList.push_back(ptr2[1]);
+                    edgeList.push_back(process_Rank);
                   }
                 }
               }
@@ -299,17 +297,27 @@ int main(int argc, char** argv)
 
           //find shared edges of this process with other processes
           //take common edges and check whether the circumcenter encroaches the segment
-          for(int i=0;i<edgeList.size()/2;i++) {
-            float centerX = midPoint(points[2*i][0],points[2*i+1][0]);
-            float centerY = midPoint(points[2*i][1],points[2*i+1][1]);
-            float radius = distance(centerX,centerY,points[2*i][0],points[2*i][1]);
+          for(int i=0;i<edgeList.size()/3;i++) {
+            float centerX = midPoint(points[edgeList[3*i]][0],points[edgeList[3*i+1]][0]);
+            float centerY = midPoint(points[edgeList[3*i]][1],points[edgeList[3*i+1]][1]);
+            float radius = distance(centerX,centerY,points[edgeList[3*i]][0],
+                                    points[edgeList[3*i]][1]);
             if(pow((ptr[0]-centerX),2)+pow((ptr[0]-centerX),2)-pow(radius,2) < 0) {
               cout << "Encroaches" << endl;
               // MPI
+              // sending mpi message to the respective process
+              int data[2];
+              data[0] = edgeList[3*i]; data[1] = edgeList[3*i+1];
+              MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
               // Local cavity
+
+
+
             } else {
               cout << "Doesnot Encroaches" << endl;
               // Local cavity
+              
+
             }
           }
 
