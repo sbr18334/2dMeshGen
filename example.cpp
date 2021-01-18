@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <unordered_set>
 
 #include <mpi.h>
 #include <metis.h>
@@ -14,7 +15,6 @@
 // To compile and run
 // mpic++ -std=c++11 example.cpp -lmetis
 // mpirun -np 4 ./a.out
-
 
 using namespace std;
 
@@ -25,10 +25,10 @@ struct Pnt {
 // Test Data
 ifstream inFile ("input.txt");
 vector<vector<float>> points
-    {
+  {
     {1,2},{2,3},{-4,6},{-2,3},{4,3},{-10,3},{4,8},
     {5,-3},{-1,7},{0,5},{4,4},{5,-1}
-    };
+  };
 
 // Vertices XS - x coordinates & YS - y coordinates
 vector<int> XS;
@@ -71,10 +71,8 @@ float* circumcenter(float Px, float Py, float Qx, float Qy, float Rx, float Ry
 }
 
 float distance(int x1, int y1, int x2, int y2) 
-{ 
-    // Calculating distance 
-    return sqrt(pow(x2 - x1, 2) +  
-                pow(y2 - y1, 2)); 
+{
+    return sqrt(pow(x2 - x1, 2) +  pow(y2 - y1, 2)); 
 } 
 
 float triangle_area(float a, float b, float c)
@@ -113,7 +111,6 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
     arr[0] = -999;arr[1] = -999;
     return arr;
   }
-  
 }
 
 int main(int argc, char** argv)
@@ -139,11 +136,7 @@ int main(int argc, char** argv)
     DT.AddPoint(Point(XS[i], YS[i]));
   }
 
-  cout << endl;
-  
   DT.print();
-
-  cout << endl;
 
   // get Triangles
   // DT.getTriangle();
@@ -151,22 +144,10 @@ int main(int argc, char** argv)
   //hardcodng the vertices in 2d vector format and also the 4 extreme vertices
   vector<vector<int>> vertices
     {
-      {7,4,0},
-      {8,4,5},
-      {10,3,2},
-      {10,2,1},
-      {13,5,4},
-      {13,4,7},
-      {13,7,6},
-      {13,6,5},
-      {14,8,10},
-      {15,0,4},
-      {15,4,8},
-      {15,8,14},
-      {15,14,10},
-      {15,10,1},
-      {15,1,11},
-      {15,11,0}
+      {7,4,0}, {8,4,5}, {10,3,2}, {10,2,1}, {13,5,4},
+      {13,4,7}, {13,7,6}, {13,6,5}, {14,8,10}, {15,0,4},
+      {15,4,8}, {15,8,14}, {15,14,10}, {15,10,1},
+      {15,1,11}, {15,11,0}
     };
 
     // checking for the predicates
@@ -225,7 +206,6 @@ int main(int argc, char** argv)
         std::cout << "Node " << part_i << " Allotted to P" << npart[part_i] << std::endl;
       }
     }
-
 
     ///////////////////////////////////////////////////////////////
     // allocating partitioned data to processes
@@ -329,7 +309,6 @@ int main(int argc, char** argv)
               // Local cavity
 
 
-
             } else {
               cout << "Doesnot Encroaches" << endl;
               // Pnt pa = {-2,0}; Pnt pb = {2,0}; 
@@ -364,13 +343,20 @@ int main(int argc, char** argv)
                 cout << trashTriangles[i] << endl;
               }
               // remove these triangles from the list
-              
-              // obtain non-duplicate vertices and construct vertices with cc
-              // and also add edges
+
+              // constructing new triangles
+              // Remove duplicate vertices from the list
+              std::unordered_set<int> s(trashTriangles.begin(), trashTriangles.end());
+              trashTriangles.assign(s.begin(), s.end());
+              //constructing edges joining these vertices to CC
+              vector<int> trashEdgeList;
+              for(int i=0;i<trashTriangles.size();i++) {
+                int b[2] = {nVertices, trashTriangles[i]};
+                trashEdgeList.insert(trashEdgeList.end(), b, b+2); 
+              }
 
             }
           }
-
         }
 
         cout << endl;
@@ -392,9 +378,7 @@ int main(int argc, char** argv)
       }
       // cout << partNodes[0];cout << partNodes[1];cout << partNodes[2];
       cout << partNodes.size();
-
     }
-
 
     MPI_Finalize();
 
