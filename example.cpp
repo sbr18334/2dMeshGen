@@ -18,9 +18,13 @@
 
 using namespace std;
 
+struct Pnt {
+  float x, y;
+};
+
 // Test Data
 ifstream inFile ("input.txt");
-vector<vector<int>> points
+vector<vector<float>> points
     {
     {1,2},{2,3},{-4,6},{-2,3},{4,3},{-10,3},{4,8},
     {5,-3},{-1,7},{0,5},{4,4},{5,-1}
@@ -32,6 +36,19 @@ vector<int> YS;
 
 float threshold1 = 2;
 float threshold2 = 5;
+
+float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
+   return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
+}
+
+bool inCircle(Pnt p1, Pnt p2, Pnt p3, Pnt p) {     //check whether p is inside or outside
+   float area = triangleArea (p1, p2, p3);          //area of triangle ABC
+   float area1 = triangleArea (p, p2, p3);         //area of PBC
+   float area2 = triangleArea (p1, p, p3);         //area of APC
+   float area3 = triangleArea (p1, p2, p);        //area of ABP
+
+   return (area == area1 + area2 + area3);        //when three triangles are forming the whole triangle
+}
 
 float* circumcenter(float Px, float Py, float Qx, float Qy, float Rx, float Ry
                     ,float x, float y, float z)
@@ -264,10 +281,7 @@ int main(int argc, char** argv)
           cout << ptr[0] << " " << ptr[1] << endl;
           //got circumcenter
 
-          //myedges
-          //otheredgeswithprocessid
-          //commonedgeswithprocessid
-
+          //commonedges with processid
           cout << "eind.length/3" << eind.size()/3 << endl;
           //total no. of triangles
           int triangleCount = eind.size()/3;
@@ -287,6 +301,7 @@ int main(int argc, char** argv)
                   if(!(ptr2[0] == -999 && ptr2[1] == -999)){
                     edgeList.push_back(ptr2[0]);
                     edgeList.push_back(ptr2[1]);
+                    edgeList.push_back(process_Rank);
                   }
                 }
               }
@@ -299,17 +314,60 @@ int main(int argc, char** argv)
 
           //find shared edges of this process with other processes
           //take common edges and check whether the circumcenter encroaches the segment
-          for(int i=0;i<edgeList.size()/2;i++) {
-            float centerX = midPoint(points[2*i][0],points[2*i+1][0]);
-            float centerY = midPoint(points[2*i][1],points[2*i+1][1]);
-            float radius = distance(centerX,centerY,points[2*i][0],points[2*i][1]);
+          for(int i=0;i<edgeList.size()/3;i++) {
+            float centerX = midPoint(points[edgeList[3*i]][0],points[edgeList[3*i+1]][0]);
+            float centerY = midPoint(points[edgeList[3*i]][1],points[edgeList[3*i+1]][1]);
+            float radius = distance(centerX,centerY,points[edgeList[3*i]][0],
+                                    points[edgeList[3*i]][1]);
             if(pow((ptr[0]-centerX),2)+pow((ptr[0]-centerX),2)-pow(radius,2) < 0) {
               cout << "Encroaches" << endl;
               // MPI
+              // sending mpi message to the respective process
+              int data[2];
+              data[0] = edgeList[3*i]; data[1] = edgeList[3*i+1];
+              // MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
               // Local cavity
+
+
+
             } else {
               cout << "Doesnot Encroaches" << endl;
+              // Pnt pa = {-2,0}; Pnt pb = {2,0}; 
+              // Pnt pc = {0,2}; Pnt pd = {0,4};
+              // const ccw = incircle(&pa, &pb, &pc, &pd);
+
               // Local cavity
+              // vector to keep track of all the triangles to delete
+              vector<int> trashTriangles;
+              for(int i=0;i<eind.size()/3;i++) {
+                Pnt pa = {points[eind[3*i]][0],points[eind[3*i]][1]};
+                Pnt pb = {points[eind[3*i+1]][0],points[eind[3*i+1]][1]};
+                Pnt pc = {points[eind[3*i+2]][0],points[eind[3*i+2]][1]};
+                Pnt pd = {ptr[0], ptr[1]};
+                cout << "Pa" << pa.x << " " << pa.y;
+                cout << "Pb" << pb.x << " " << pb.y;
+                cout << "Pc" << pc.x << " " << pc.y;
+                cout << "Pd" << pd.x << " " << pd.y;
+                if(inCircle(pa,pb,pc,pd)) {
+                  //result is negative
+                  //delete the triangle from the eind
+                  //join Pnt to the vertices containing those triangles
+                  cout << "Lies inside";
+                  int a[3] = {eind[3*i], eind[3*i+1], eind[3*i+2]};
+                  trashTriangles.insert(trashTriangles.end(), a, a+3);
+                } else {
+                  cout << "Lies outside";
+                }
+              }
+
+              for(int i=0;i<trashTriangles.size();i++) {
+                cout << trashTriangles[i] << endl;
+              }
+              // remove these triangles from the list
+              
+              // obtain non-duplicate vertices and construct vertices with cc
+              // and also add edges
+
             }
           }
 
