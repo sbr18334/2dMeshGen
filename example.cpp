@@ -223,9 +223,8 @@ int main(int argc, char** argv)
         }
       }
 
-      // cout << partNodes[0];cout << partNodes[1];cout << partNodes[2];
       cout << partNodes.size();
-      for(int i=0;i<partNodes.size();i++) {
+      for(int i=0;i<partElements.size()/3;i++) {
         //vertices of that triangle
         int Px = points[eind[i*3]][0];
         int Py = points[eind[i*3]][1];
@@ -242,9 +241,12 @@ int main(int argc, char** argv)
         float area = triangle_area(x,y,z);
         float circumRadius = x*y*z/(4*area);
 
+
+        ///////////////////////////////////////////////////////////////
+        // obtaining bad triangles
+        ///////////////////////////////////////////////////////////////
         if(circumRadius/shortest > threshold1 || area > threshold2) {
-          //bad triangle
-          //find the circumcenter
+          //bad triangle, find the circumcenter
           cout << "IN" << endl;
           cout << "Shortest" << shortest << endl;
           cout << "Circumradius" << circumRadius << endl;
@@ -252,7 +254,6 @@ int main(int argc, char** argv)
           cout << "Area" << area << endl;
 
           //circumcenter co-ordinates
-
           float* ptr = circumcenter(Px,Py,Qx,Qy,Rx,Ry,x,y,z);
 
           cout << Px << " " << Py << " " << Qx << " " << Qy 
@@ -267,6 +268,7 @@ int main(int argc, char** argv)
           int triangleCount = eind.size()/3;
           //complexity verify
           std::vector<idx_t> edgeList;
+              //using trashEdgeList add the triangles
           for(int i=0;i<triangleCount;i++) {
             if(epart[i] == process_Rank){
               for(int j=0;j<triangleCount;j++) {
@@ -318,10 +320,11 @@ int main(int argc, char** argv)
               // Local cavity
               // vector to keep track of all the triangles to delete
               vector<int> trashTriangles;
-              for(int i=0;i<eind.size()/3;i++) {
-                Pnt pa = {points[eind[3*i]][0],points[eind[3*i]][1]};
-                Pnt pb = {points[eind[3*i+1]][0],points[eind[3*i+1]][1]};
-                Pnt pc = {points[eind[3*i+2]][0],points[eind[3*i+2]][1]};
+              // do not use eind here
+              for(int i=0;i<partElements.size()/3;i++) {
+                Pnt pa = {points[partElements[3*i]][0],points[partElements[3*i]][1]};
+                Pnt pb = {points[partElements[3*i+1]][0],points[partElements[3*i+1]][1]};
+                Pnt pc = {points[partElements[3*i+2]][0],points[partElements[3*i+2]][1]};
                 Pnt pd = {ptr[0], ptr[1]};
                 cout << "Pa" << pa.x << " " << pa.y;
                 cout << "Pb" << pb.x << " " << pb.y;
@@ -332,17 +335,27 @@ int main(int argc, char** argv)
                   //delete the triangle from the eind
                   //join Pnt to the vertices containing those triangles
                   cout << "Lies inside";
-                  int a[3] = {eind[3*i], eind[3*i+1], eind[3*i+2]};
-                  trashTriangles.insert(trashTriangles.end(), a, a+3);
+                  // int a[3] = {partElements[3*i], partElements[3*i+1], partElements[3*i+2]};
+                  // trashTriangles.insert(trashTriangles.end(), a, a+3);
+                  // store index of the triangle to remove
+                  trashTriangles.push_back(i);
+                  // remove this perticular triangle right away              
+                  // remove these triangles from the list
+                  // match trashtriangles with eid and remove the triangles
+                  // update ptr, nVertices and nElements
                 } else {
                   cout << "Lies outside";
                 }
               }
 
+              // trashtriangles contains the list of triangles that needs to be removed
               for(int i=0;i<trashTriangles.size();i++) {
                 cout << trashTriangles[i] << endl;
+                partElements.erase(partElements.begin() + (3*i));
+                partElements.erase(partElements.begin() + (3*i+1));
+                partElements.erase(partElements.begin() + (3*i+2));
               }
-              // remove these triangles from the list
+              // triangles are removed from the local list
 
               // constructing new triangles
               // Remove duplicate vertices from the list
@@ -351,9 +364,12 @@ int main(int argc, char** argv)
               //constructing edges joining these vertices to CC
               vector<int> trashEdgeList;
               for(int i=0;i<trashTriangles.size();i++) {
+                //nvertices indicates the new vertex number
                 int b[2] = {nVertices, trashTriangles[i]};
-                trashEdgeList.insert(trashEdgeList.end(), b, b+2); 
+                trashEdgeList.insert(trashEdgeList.end(), b, b+2);
+                nVertices++;
               }
+              //using trashEdgeList add the triangles
 
             }
           }
