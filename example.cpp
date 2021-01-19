@@ -311,7 +311,7 @@ int main(int argc, char** argv)
               // Local cavity
 
 
-            } else {
+            } else { // in bad triangle // common edges
               cout << "Doesnot Encroaches" << endl;
               // Pnt pa = {-2,0}; Pnt pb = {2,0}; 
               // Pnt pc = {0,2}; Pnt pd = {0,4};
@@ -320,6 +320,7 @@ int main(int argc, char** argv)
               // Local cavity
               // vector to keep track of all the triangles to delete
               vector<int> trashTriangles;
+              vector<int> trashIndices;
               // do not use eind here
               for(int i=0;i<partElements.size()/3;i++) {
                 Pnt pa = {points[partElements[3*i]][0],points[partElements[3*i]][1]};
@@ -331,53 +332,36 @@ int main(int argc, char** argv)
                 cout << "Pc" << pc.x << " " << pc.y;
                 cout << "Pd" << pd.x << " " << pd.y;
                 if(inCircle(pa,pb,pc,pd)) {
-                  //result is negative
-                  //delete the triangle from the eind
-                  //join Pnt to the vertices containing those triangles
                   cout << "Lies inside";
-                  // int a[3] = {partElements[3*i], partElements[3*i+1], partElements[3*i+2]};
-                  // trashTriangles.insert(trashTriangles.end(), a, a+3);
-                  // store index of the triangle to remove
-                  trashTriangles.push_back(i);
-                  // remove this perticular triangle right away              
-                  // remove these triangles from the list
-                  // match trashtriangles with eid and remove the triangles
-                  // update ptr, nVertices and nElements
+                  int a[3] = {partElements[3*i], partElements[3*i+1], partElements[3*i+2]};
+                  trashTriangles.insert(trashTriangles.end(), a, a+3);
+                  trashIndices.push_back(i);
                 } else {
                   cout << "Lies outside";
                 }
               }
 
+              vector<int> newEdgeList;
+              for(int i=0;i<trashTriangles.size()/3;i++) {
+                // find all the common edges between these set of triangles
+
+              }
+
               // trashtriangles contains the list of triangles that needs to be removed
-              for(int i=0;i<trashTriangles.size();i++) {
-                cout << trashTriangles[i] << endl;
+              for(int i=0;i<trashIndices.size();i++) {
+                cout << trashIndices[i] << endl;
                 partElements.erase(partElements.begin() + (3*i));
                 partElements.erase(partElements.begin() + (3*i+1));
                 partElements.erase(partElements.begin() + (3*i+2));
               }
-              // triangles are removed from the local list
+            } // end of doesnot encroaches loop
 
-              // constructing new triangles
-              // Remove duplicate vertices from the list
-              std::unordered_set<int> s(trashTriangles.begin(), trashTriangles.end());
-              trashTriangles.assign(s.begin(), s.end());
-              //constructing edges joining these vertices to CC
-              vector<int> trashEdgeList;
-              for(int i=0;i<trashTriangles.size();i++) {
-                //nvertices indicates the new vertex number
-                int b[2] = {nVertices, trashTriangles[i]};
-                trashEdgeList.insert(trashEdgeList.end(), b, b+2);
-                nVertices++;
-              }
-              //using trashEdgeList add the triangles
-
-            }
-          }
-        }
+          } // end of each common edge check 
+        } // end of each bad triangle loop check
 
         cout << endl;
 
-      } // end of each bad triangle loop check
+      } // end of each triangle loop check
     }
 
     else if(process_Rank == 1){
