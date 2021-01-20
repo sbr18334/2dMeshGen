@@ -342,17 +342,52 @@ int main(int argc, char** argv)
               }
 
               vector<int> newEdgeList;
-              for(int i=0;i<trashTriangles.size()/3;i++) {
-                // find all the common edges between these set of triangles
 
+              for(int i=0;i<trashTriangles.size()/3;i++) {
+                
+                newEdgelist.push_back(trashTriangles[3*i]);
+                newEdgelist.push_back(trashTriangles[3*i+1]);
+                newEdgelist.push_back(trashTriangles[3*i+2]);
+                newEdgelist.push_back(trashTriangles[3*i]);
+                newEdgelist.push_back(trashTriangles[3*i+1]);
+                newEdgelist.push_back(trashTriangles[3*i+2]);
+                // find all the unique edges between these set of triangles
+              }
+
+              vector<int> trashEdges;
+              for(int i=0;i<newEdgelist.size()/2;i++) {
+                for(int j=i;j<newEdgelist.size()/2;j++) {
+                  if(i==j) {continue;}
+                  if((newEdgelist[2*i] == newEdgelist[2*j] && newEdgelist[2*i+1] == newEdgelist[2*j+1])
+                  || (newEdgelist[2*i] == newEdgelist[2*j+1] && newEdgelist[2*i+1] == newEdgelist[2*j])) {
+                    trashEdges.push_back(i);
+                    trashEdges.push_back(j);
+                  }
+                }
+              }
+
+              // remove duplicates and put it in descending order
+              std::unordered_set<int> s(trashEdges.begin(), trashEdges.end());
+              trashEdges.assign(s.begin(), s.end());
+              sort(trashEdges.begin(), trashEdges.end(), greater<int>());
+              // remove from newEdgeList
+              for(int i=0;i<trashEdges.size();i++) {
+                newEdgelist.erase(newEdgelist.begin() + trashEdges[2*i], newEdgelist.begin() + trashEdges[2*i+1]);
+              }
+              
+              // add the remaining edges to cc to form triangles
+              vector<int> newTriangles;
+              for(int i=0;i<newEdgelist.size()/2;i++) {
+                // push back all three vertices
+                newTriangles.push_back(newEdgelist[2*i]);
+                newTriangles.push_back(newEdgelist[2+i+1]);
+                newTriangles.push_back();
               }
 
               // trashtriangles contains the list of triangles that needs to be removed
               for(int i=0;i<trashIndices.size();i++) {
                 cout << trashIndices[i] << endl;
-                partElements.erase(partElements.begin() + (3*i));
-                partElements.erase(partElements.begin() + (3*i+1));
-                partElements.erase(partElements.begin() + (3*i+2));
+                partElements.erase(partElements.begin() + trashIndices[i], partElements.begin() + trashIndices[i]+2);
               }
             } // end of doesnot encroaches loop
 
