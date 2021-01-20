@@ -312,6 +312,15 @@ int main(int argc, char** argv)
 
 
             } else { // in bad triangle // common edges
+              // for testing purpose code(+9 lines)
+              int data[2];
+              data[0] = 1; data[1] = 2;
+              cout << "Sending MPI Message to designated processes" << endl;
+              cout << "-------------------------------------------" << endl;
+              MPI_Send(data,2,MPI_INT,1,0,MPI_COMM_WORLD);
+              cout << "-------------------------------------------" << endl;
+              cout << endl;
+              // end of testing purpose code(+9 lines)
               cout << "Doesnot Encroaches" << endl;
               // Pnt pa = {-2,0}; Pnt pb = {2,0}; 
               // Pnt pc = {0,2}; Pnt pd = {0,4};
@@ -341,8 +350,7 @@ int main(int argc, char** argv)
                 }
               }
 
-              vector<int> newEdgeList;
-
+              vector<int> newEdgelist;
               for(int i=0;i<trashTriangles.size()/3;i++) {
                 
                 newEdgelist.push_back(trashTriangles[3*i]);
@@ -381,7 +389,7 @@ int main(int argc, char** argv)
                 // push back all three vertices
                 newTriangles.push_back(newEdgelist[2*i]);
                 newTriangles.push_back(newEdgelist[2+i+1]);
-                newTriangles.push_back();
+                // newTriangles.push_back();
               }
 
               // trashtriangles contains the list of triangles that needs to be removed
@@ -400,6 +408,12 @@ int main(int argc, char** argv)
     }
 
     else if(process_Rank == 1){
+      // start of testing purpose code (+6 lines)
+      int array[2];
+      MPI_Recv(array,2,MPI_INT,0,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+      cout << endl << "--Msg from process id 1" << endl;
+      cout << array[0] << endl << array[1] << endl;
+      // end of testing purpose code (+6 lines)
       vector<int> partNodes;
       vector<int> partElements;
 
