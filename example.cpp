@@ -322,9 +322,6 @@ int main(int argc, char** argv)
               cout << endl;
               // end of testing purpose code(+9 lines)
               cout << "Doesnot Encroaches" << endl;
-              // Pnt pa = {-2,0}; Pnt pb = {2,0}; 
-              // Pnt pc = {0,2}; Pnt pd = {0,4};
-              // const ccw = incircle(&pa, &pb, &pc, &pd);
 
               // Local cavity
               // vector to keep track of all the triangles to delete
@@ -382,14 +379,17 @@ int main(int argc, char** argv)
               for(int i=0;i<trashEdges.size();i++) {
                 newEdgelist.erase(newEdgelist.begin() + trashEdges[2*i], newEdgelist.begin() + trashEdges[2*i+1]);
               }
+
+              int newVertexId = nVertices;
+              points[newVertexId] = {ptr[0],ptr[1]};
+              nVertices++;
               
               // add the remaining edges to cc to form triangles
-              vector<int> newTriangles;
               for(int i=0;i<newEdgelist.size()/2;i++) {
                 // push back all three vertices
-                newTriangles.push_back(newEdgelist[2*i]);
-                newTriangles.push_back(newEdgelist[2+i+1]);
-                // newTriangles.push_back();
+                partElements.push_back(newEdgelist[2*i]);
+                partElements.push_back(newEdgelist[2*i+1]);
+                partElements.push_back(newVertexId);
               }
 
               // trashtriangles contains the list of triangles that needs to be removed
