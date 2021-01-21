@@ -241,7 +241,6 @@ int main(int argc, char** argv)
         float area = triangle_area(x,y,z);
         float circumRadius = x*y*z/(4*area);
 
-
         ///////////////////////////////////////////////////////////////
         // obtaining bad triangles
         ///////////////////////////////////////////////////////////////
@@ -294,6 +293,9 @@ int main(int argc, char** argv)
             cout << i << ":" << edgeList[i] << endl;
           }
 
+          // Local cavity
+          Pnt pd = {ptr[0], ptr[1]};
+
           //find shared edges of this process with other processes
           //take common edges and check whether the circumcenter encroaches the segment
           for(int i=0;i<edgeList.size()/3;i++) {
@@ -308,8 +310,9 @@ int main(int argc, char** argv)
               int data[2];
               data[0] = edgeList[3*i]; data[1] = edgeList[3*i+1];
               // MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
-              // Local cavity
 
+              pd = {centerX, centerY};
+              break;
 
             } else { // in bad triangle // common edges
               // for testing purpose code(+9 lines)
@@ -323,7 +326,12 @@ int main(int argc, char** argv)
               // end of testing purpose code(+9 lines)
               cout << "Doesnot Encroaches" << endl;
 
-              // Local cavity
+            } // end of doesnot encroaches loop
+
+          } // end of each common edge check 
+
+
+            // Local cavity
               // vector to keep track of all the triangles to delete
               vector<int> trashTriangles;
               vector<int> trashIndices;
@@ -332,7 +340,6 @@ int main(int argc, char** argv)
                 Pnt pa = {points[partElements[3*i]][0],points[partElements[3*i]][1]};
                 Pnt pb = {points[partElements[3*i+1]][0],points[partElements[3*i+1]][1]};
                 Pnt pc = {points[partElements[3*i+2]][0],points[partElements[3*i+2]][1]};
-                Pnt pd = {ptr[0], ptr[1]};
                 cout << "Pa" << pa.x << " " << pa.y;
                 cout << "Pb" << pb.x << " " << pb.y;
                 cout << "Pc" << pc.x << " " << pc.y;
@@ -380,8 +387,9 @@ int main(int argc, char** argv)
                 newEdgelist.erase(newEdgelist.begin() + trashEdges[2*i], newEdgelist.begin() + trashEdges[2*i+1]);
               }
 
+              // adding new vertex
               int newVertexId = nVertices;
-              points[newVertexId] = {ptr[0],ptr[1]};
+              points[newVertexId] = {pd[0],pd[1]};
               nVertices++;
               
               // add the remaining edges to cc to form triangles
@@ -397,9 +405,7 @@ int main(int argc, char** argv)
                 cout << trashIndices[i] << endl;
                 partElements.erase(partElements.begin() + trashIndices[i], partElements.begin() + trashIndices[i]+2);
               }
-            } // end of doesnot encroaches loop
 
-          } // end of each common edge check 
         } // end of each bad triangle loop check
 
         cout << endl;
