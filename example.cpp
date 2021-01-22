@@ -434,7 +434,7 @@ int main(int argc, char** argv)
         MPI_Status status;
         int val[2];
         MPI_Recv(val, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        printf("root recev %d from %d with tag = %d\n" , val , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
+        printf("root recev %d,%d from %d with tag = %d\n" , val[0], val[1] , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
 
         if (status.MPI_TAG == 2)
         num_of_DONE++;
@@ -450,7 +450,7 @@ int main(int argc, char** argv)
     if(process_Rank == 0)
     {
         int val = 55;
-        MPI_Send(&val, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
+        MPI_Send(&val, 1, MPI_INT, 1, 2, MPI_COMM_WORLD);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
