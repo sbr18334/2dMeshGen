@@ -211,7 +211,7 @@ int main(int argc, char** argv)
     // allocating partitioned data to processes
     ///////////////////////////////////////////////////////////////
 
-    int buffer, root, DONE;
+    int num_of_DONE = 0;
     if(process_Rank == 0){
       vector<int> partNodes;
       vector<int> partElements;
@@ -322,7 +322,7 @@ int main(int argc, char** argv)
               data[0] = 1; data[1] = 2;
               cout << "Sending MPI Message to designated processes" << endl;
               cout << "-------------------------------------------" << endl;
-              MPI_Send(data,2,MPI_INT,1,0,MPI_COMM_WORLD);
+              // MPI_Send(data,2,MPI_INT,1,0,MPI_COMM_WORLD);
               cout << "-------------------------------------------" << endl;
               cout << endl;
               // end of testing purpose code(+9 lines)
@@ -411,12 +411,12 @@ int main(int argc, char** argv)
         } // end of each bad triangle loop check
 
         while (1) {
-          int num_of_DONE = 0;
           MPI_Status status;
-          MPI_Recv(&buffer, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-          printf("root recev %d from %d with tag = %d\n" , buffer , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
+          int val;
+          MPI_Recv(&val, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+          printf("root recev %d from %d with tag = %d\n" , val , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
 
-          if (status.MPI_TAG == DONE)
+          if (status.MPI_TAG == 2)
           num_of_DONE++;
           printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
           if(num_of_DONE == 3)
@@ -431,12 +431,11 @@ int main(int argc, char** argv)
     }
     else if(process_Rank != 0) {
       // start of testing purpose code (+6 lines)
-      int array[2];
-      array[0] =1; array[1] = 2;
-      MPI_Send(array,2,MPI_INT,0,1,MPI_COMM_WORLD);
+      int val = 2;
+      MPI_Send(&val,1,MPI_INT,0,1,MPI_COMM_WORLD);
       cout << endl << "--Msg from process id 1" << endl;
-      MPI_Send(array,2,MPI_INT,0,1,MPI_COMM_WORLD);
-      MPI_Send(array,2,MPI_INT,0,1,MPI_COMM_WORLD);
+      MPI_Send(&val,1,MPI_INT,0,1,MPI_COMM_WORLD);
+      MPI_Send(&val,1,MPI_INT,0,1,MPI_COMM_WORLD);
       // end of testing purpose code (+6 lines)
       vector<int> partNodes;
       vector<int> partElements;
@@ -455,8 +454,8 @@ int main(int argc, char** argv)
 
     if(process_Rank != 0)
     {
-        buffer = 55;
-        MPI_Send(&buffer, 1, MPI_INT, root, DONE, MPI_COMM_WORLD);
+        int val = 55;
+        MPI_Send(&val, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);
     }
 
 
