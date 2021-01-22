@@ -115,6 +115,9 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
 
 int main(int argc, char** argv)
 {
+
+  //Number of processes
+  int nProcesses = 4;
     int x;
     inFile >> x;
 
@@ -180,7 +183,7 @@ int main(int argc, char** argv)
     ///////////////////////////////////////////////////////////////
     idx_t nVertices = 8;
     idx_t nElements = 8;
-    idx_t nParts = 2;
+    idx_t nParts = nProcesses;
 
     idx_t objval;
     std::vector<idx_t> epart(nElements, 0);
@@ -195,24 +198,24 @@ int main(int argc, char** argv)
       &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
       &nParts, NULL, NULL, &objval, epart.data(), npart.data());
       
-    if(process_Rank == 0){
-      cout << endl <<"----------Elements Partition-------" << endl;
-      for(unsigned part_i = 0; part_i < epart.size(); part_i++){
-        std::cout << "Element " << part_i << " Allotted to the P" << epart[part_i] << std::endl;
-      }
+    // if(process_Rank == 0){
+    //   cout << endl <<"----------Elements Partition-------" << endl;
+    //   for(unsigned part_i = 0; part_i < epart.size(); part_i++){
+    //     std::cout << "Element " << part_i << " Allotted to the P" << epart[part_i] << std::endl;
+    //   }
 
-      cout << endl << "----------Nodes Partition----------" << endl;
-      for(unsigned part_i = 0; part_i < npart.size(); part_i++){
-        std::cout << "Node " << part_i << " Allotted to P" << npart[part_i] << std::endl;
-      }
-    }
+    //   cout << endl << "----------Nodes Partition----------" << endl;
+    //   for(unsigned part_i = 0; part_i < npart.size(); part_i++){
+    //     std::cout << "Node " << part_i << " Allotted to P" << npart[part_i] << std::endl;
+    //   }
+    // }
 
     ///////////////////////////////////////////////////////////////
     // allocating partitioned data to processes
     ///////////////////////////////////////////////////////////////
 
     int num_of_DONE = 0;
-    if(process_Rank == 0){
+    // if(process_Rank == 0){
       vector<int> partNodes;
       vector<int> partElements;
 
@@ -413,22 +416,22 @@ int main(int argc, char** argv)
         cout << endl;
 
       } // end of each triangle loop check
-    }
+    // }
 
-    else if(process_Rank != 0) {
-      vector<int> partNodes;
-      vector<int> partElements;
+    // else if(process_Rank != 0) {
+    //   vector<int> partNodes;
+    //   vector<int> partElements;
 
-      for(unsigned part_i = 0; part_i < npart.size(); part_i++){
-        if(npart[part_i] == process_Rank) {
-          partNodes.push_back(part_i);
-        }
-        if(epart[part_i] == process_Rank) {
-          partElements.push_back(part_i);
-        }
-      }
+    //   for(unsigned part_i = 0; part_i < npart.size(); part_i++){
+    //     if(npart[part_i] == process_Rank) {
+    //       partNodes.push_back(part_i);
+    //     }
+    //     if(epart[part_i] == process_Rank) {
+    //       partElements.push_back(part_i);
+    //     }
+    //   }
       // cout << partNodes[0];cout << partNodes[1];cout << partNodes[2];
-      cout << partNodes.size();
+      // cout << partNodes.size();
 
       while (1) {
         MPI_Status status;
@@ -439,19 +442,24 @@ int main(int argc, char** argv)
         if (status.MPI_TAG == 2)
         num_of_DONE++;
         printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
-        if(num_of_DONE == 1)
+        if(num_of_DONE == nProcesses-1)
         break;
-
-      /* Do stuff */
       }
 
-    }
+    // }
 
-    if(process_Rank == 0)
-    {
-        int val = 55;
-        MPI_Send(&val, 1, MPI_INT, 1, 2, MPI_COMM_WORLD);
-    }
+    // if(process_Rank == 0)
+    // {
+
+      int val = 55;
+      while(nProcesses > 0) {
+        if(nProcesses-1 == process_Rank){
+          continue;
+          MPI_Send(&val, 1, MPI_INT, nProcesses-1, 2, MPI_COMM_WORLD);
+        }
+      }
+      // TasK: message has to be BC to all the other processes except the process executing it.
+    // }
 
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
