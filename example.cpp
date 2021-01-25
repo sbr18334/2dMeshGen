@@ -1,6 +1,6 @@
-#include <iostream>
 #include "Delaunay.hpp"
 #include <vector>
+#include <iostream>
 #include <stdio.h>
 #include <math.h>
 
@@ -110,6 +110,84 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
   else {
     arr[0] = -999;arr[1] = -999;
     return arr;
+  }
+}
+
+void localCavityCreation(vector<int> &partElements, int &nVertices, vector<vector<float>> &points, Pnt pd)
+{
+  // Local cavity
+  // vector to keep track of all the triangles to delete
+  vector<int> trashTriangles;
+  vector<int> trashIndices;
+  // do not use eind here
+  for(int i=0;i<partElements.size()/3;i++) {
+    Pnt pa = {points[partElements[3*i]][0],points[partElements[3*i]][1]};
+    Pnt pb = {points[partElements[3*i+1]][0],points[partElements[3*i+1]][1]};
+    Pnt pc = {points[partElements[3*i+2]][0],points[partElements[3*i+2]][1]};
+    cout << "Pa" << pa.x << " " << pa.y;
+    cout << "Pb" << pb.x << " " << pb.y;
+    cout << "Pc" << pc.x << " " << pc.y;
+    cout << "Pd" << pd.x << " " << pd.y;
+    if(inCircle(pa,pb,pc,pd)) {
+      cout << "Lies inside";
+      int a[3] = {partElements[3*i], partElements[3*i+1], partElements[3*i+2]};
+      trashTriangles.insert(trashTriangles.end(), a, a+3);
+      trashIndices.push_back(i);
+    } else {
+      cout << "Lies outside";
+    }
+  }
+
+  vector<int> newEdgelist;
+  for(int i=0;i<trashTriangles.size()/3;i++) {
+    
+    newEdgelist.push_back(trashTriangles[3*i]);
+    newEdgelist.push_back(trashTriangles[3*i+1]);
+    newEdgelist.push_back(trashTriangles[3*i+2]);
+    newEdgelist.push_back(trashTriangles[3*i]);
+    newEdgelist.push_back(trashTriangles[3*i+1]);
+    newEdgelist.push_back(trashTriangles[3*i+2]);
+    // find all the unique edges between these set of triangles
+  }
+
+  vector<int> trashEdges;
+  for(int i=0;i<newEdgelist.size()/2;i++) {
+    for(int j=i;j<newEdgelist.size()/2;j++) {
+      if(i==j) {continue;}
+      if((newEdgelist[2*i] == newEdgelist[2*j] && newEdgelist[2*i+1] == newEdgelist[2*j+1])
+      || (newEdgelist[2*i] == newEdgelist[2*j+1] && newEdgelist[2*i+1] == newEdgelist[2*j])) {
+        trashEdges.push_back(i);
+        trashEdges.push_back(j);
+      }
+    }
+  }
+
+  // remove duplicates and put it in descending order
+  std::unordered_set<int> s(trashEdges.begin(), trashEdges.end());
+  trashEdges.assign(s.begin(), s.end());
+  sort(trashEdges.begin(), trashEdges.end(), greater<int>());
+  // remove from newEdgeList
+  for(int i=0;i<trashEdges.size();i++) {
+    newEdgelist.erase(newEdgelist.begin() + trashEdges[2*i], newEdgelist.begin() + trashEdges[2*i+1]);
+  }
+
+  // adding new vertex
+  int newVertexId = nVertices;
+  points[newVertexId] = {pd.x,pd.y};
+  nVertices++;
+  
+  // add the remaining edges to cc to form triangles
+  for(int i=0;i<newEdgelist.size()/2;i++) {
+    // push back all three vertices
+    partElements.push_back(newEdgelist[2*i]);
+    partElements.push_back(newEdgelist[2*i+1]);
+    partElements.push_back(newVertexId);
+  }
+
+  // trashtriangles contains the list of triangles that needs to be removed
+  for(int i=0;i<trashIndices.size();i++) {
+    cout << trashIndices[i] << endl;
+    partElements.erase(partElements.begin() + trashIndices[i], partElements.begin() + trashIndices[i]+2);
   }
 }
 
@@ -293,7 +371,6 @@ int main(int argc, char** argv)
         cout << i << ":" << edgeList[i] << endl;
       }
 
-
       // Local cavity
       Pnt pd = {ptr[0], ptr[1]};
 
@@ -312,99 +389,25 @@ int main(int argc, char** argv)
           data[0] = edgeList[3*i]; data[1] = edgeList[3*i+1];
           // MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
 
-          pd = {centerX, centerY};
-          break;
-
-        } else { // in bad triangle // common edges
-          // for testing purpose code(+9 lines)
-          int data[2];
-          data[0] = 1; data[1] = 2;
           cout << "Sending MPI Message to designated processes" << endl;
           cout << "-------------------------------------------" << endl;
           MPI_Send(data,2,MPI_INT,1,0,MPI_COMM_WORLD);
           cout << "-------------------------------------------" << endl;
           cout << endl;
-          // end of testing purpose code(+9 lines)
+
+          pd = {centerX, centerY};
+          break;
+
+        } else { // in bad triangle // common edges
+
           cout << "Doesnot Encroaches" << endl;
 
         } // end of doesnot encroaches loop
 
-      } // end of each common edge check 
+      } // end of each common edge check
 
-      // Local cavity
-      // vector to keep track of all the triangles to delete
-      vector<int> trashTriangles;
-      vector<int> trashIndices;
-      // do not use eind here
-      for(int i=0;i<partElements.size()/3;i++) {
-        Pnt pa = {points[partElements[3*i]][0],points[partElements[3*i]][1]};
-        Pnt pb = {points[partElements[3*i+1]][0],points[partElements[3*i+1]][1]};
-        Pnt pc = {points[partElements[3*i+2]][0],points[partElements[3*i+2]][1]};
-        cout << "Pa" << pa.x << " " << pa.y;
-        cout << "Pb" << pb.x << " " << pb.y;
-        cout << "Pc" << pc.x << " " << pc.y;
-        cout << "Pd" << pd.x << " " << pd.y;
-        if(inCircle(pa,pb,pc,pd)) {
-          cout << "Lies inside";
-          int a[3] = {partElements[3*i], partElements[3*i+1], partElements[3*i+2]};
-          trashTriangles.insert(trashTriangles.end(), a, a+3);
-          trashIndices.push_back(i);
-        } else {
-          cout << "Lies outside";
-        }
-      }
-
-      vector<int> newEdgelist;
-      for(int i=0;i<trashTriangles.size()/3;i++) {
-        
-        newEdgelist.push_back(trashTriangles[3*i]);
-        newEdgelist.push_back(trashTriangles[3*i+1]);
-        newEdgelist.push_back(trashTriangles[3*i+2]);
-        newEdgelist.push_back(trashTriangles[3*i]);
-        newEdgelist.push_back(trashTriangles[3*i+1]);
-        newEdgelist.push_back(trashTriangles[3*i+2]);
-        // find all the unique edges between these set of triangles
-      }
-
-      vector<int> trashEdges;
-      for(int i=0;i<newEdgelist.size()/2;i++) {
-        for(int j=i;j<newEdgelist.size()/2;j++) {
-          if(i==j) {continue;}
-          if((newEdgelist[2*i] == newEdgelist[2*j] && newEdgelist[2*i+1] == newEdgelist[2*j+1])
-          || (newEdgelist[2*i] == newEdgelist[2*j+1] && newEdgelist[2*i+1] == newEdgelist[2*j])) {
-            trashEdges.push_back(i);
-            trashEdges.push_back(j);
-          }
-        }
-      }
-
-      // remove duplicates and put it in descending order
-      std::unordered_set<int> s(trashEdges.begin(), trashEdges.end());
-      trashEdges.assign(s.begin(), s.end());
-      sort(trashEdges.begin(), trashEdges.end(), greater<int>());
-      // remove from newEdgeList
-      for(int i=0;i<trashEdges.size();i++) {
-        newEdgelist.erase(newEdgelist.begin() + trashEdges[2*i], newEdgelist.begin() + trashEdges[2*i+1]);
-      }
-
-      // adding new vertex
-      int newVertexId = nVertices;
-      points[newVertexId] = {pd.x,pd.y};
-      nVertices++;
-      
-      // add the remaining edges to cc to form triangles
-      for(int i=0;i<newEdgelist.size()/2;i++) {
-        // push back all three vertices
-        partElements.push_back(newEdgelist[2*i]);
-        partElements.push_back(newEdgelist[2*i+1]);
-        partElements.push_back(newVertexId);
-      }
-
-      // trashtriangles contains the list of triangles that needs to be removed
-      for(int i=0;i<trashIndices.size();i++) {
-        cout << trashIndices[i] << endl;
-        partElements.erase(partElements.begin() + trashIndices[i], partElements.begin() + trashIndices[i]+2);
-      }
+      // local cavity creation
+      localCavityCreation(partElements, nVertices, points, pd);
       
     } // end of each bad triangle loop check
 
@@ -428,6 +431,13 @@ int main(int argc, char** argv)
     MPI_Recv(val, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     printf("root recev %d,%d from %d with tag = %d\n" , val[0], val[1] , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
     // split the edge and construct local cavity for the midpoint
+    // local cavity creation
+    Pnt pd;
+    if(status.MPI_TAG != 2) {
+      pd.x = (points[val[0]][0]+points[val[0]][1])/2;
+      pd.y = (points[val[1]][0]+points[val[1]][1])/2;
+      localCavityCreation(partElements, nVertices, points, pd);
+    }
 
     if (status.MPI_TAG == 2)
     num_of_DONE++;
@@ -438,6 +448,6 @@ int main(int argc, char** argv)
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
-    
+  
   return 0;
 }
