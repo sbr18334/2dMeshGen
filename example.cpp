@@ -427,6 +427,7 @@ int main(int argc, char** argv)
     int val[2];
     MPI_Recv(val, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     printf("root recev %d,%d from %d with tag = %d\n" , val[0], val[1] , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
+    // split the edge and construct local cavity for the midpoint
 
     if (status.MPI_TAG == 2)
     num_of_DONE++;
