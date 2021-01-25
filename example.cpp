@@ -293,6 +293,7 @@ int main(int argc, char** argv)
         cout << i << ":" << edgeList[i] << endl;
       }
 
+
       // Local cavity
       Pnt pd = {ptr[0], ptr[1]};
 
@@ -329,7 +330,6 @@ int main(int argc, char** argv)
         } // end of doesnot encroaches loop
 
       } // end of each common edge check 
-
 
       // Local cavity
       // vector to keep track of all the triangles to delete
