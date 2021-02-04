@@ -259,8 +259,8 @@ int main(int argc, char** argv)
   ///////////////////////////////////////////////////////////////
   // partmeshNodal
   ///////////////////////////////////////////////////////////////
-  idx_t nVertices = 8;
-  idx_t nElements = 8;
+  idx_t nVertices = 29;
+  idx_t nElements = 29;
   idx_t nParts = nProcesses;
 
   idx_t objval;
@@ -268,9 +268,73 @@ int main(int argc, char** argv)
   std::vector<idx_t> npart(nVertices, 0);
   std::vector<idx_t> recpart(nVertices, 0);
 
-  std::vector<idx_t> eptr = {8,0,3,6,9,12,15,18,21};
+  std::vector<idx_t> eind;
+  std::vector<idx_t> eptr;
 
-  std::vector<idx_t> eind = {0,4,5,4,5,6,4,6,7,4,7,3,0,4,3,0,1,3,1,2,3,2,3,7};
+  std::ifstream infile("A.1.ele");
+  std::string line;
+  std::getline(infile, line);
+  std::istringstream iss(line);
+  int a,b,c;
+  if (!(iss >> a >> b >> c)) {}
+  cout << a;
+  eptr.push_back(a);
+  int count = 0;
+  while (a > 0)
+  {
+    std::getline(infile, line);
+    std::istringstream iss(line);
+    int a2, b, c, d;
+    if (!(iss >> a2 >> b >> c >> d)) { break; } // error
+
+    // process pair (a,b)
+    cout << a2 << b << c << endl;
+    int v[3] = {b-1, c-1, d-1};
+    eind.insert(eind.end(), v, v+3);
+    eptr.push_back(3*count);
+    a--;count++;
+  }
+
+  std::ifstream infile2("A.1.node");
+  std::string line2;
+  std::getline(infile2, line2);
+  std::istringstream iss2(line2);
+  int a_c;
+  if (!(iss2 >> a_c)) {}
+  cout << a;
+  while (a_c > 0)
+  {
+    std::getline(infile2, line2);
+    std::istringstream iss2(line2);
+    float a2, b, c, d;
+    if (!(iss2 >> a2 >> b >> c >> d)) { break; } // error
+
+    // process pair (a,b)
+    cout << a2 << b << c << endl;
+    vector<float> v = {b, c};
+    points.push_back(v);
+    a_c--;
+  }
+
+  // remove hardcoding
+  // std::vector<idx_t> eptr = {8,0,3,6,9,12,15,18,21};
+
+  cout << "---------------------" << endl;
+  for(int i=0;i<eptr.size();i++) {
+    cout << eptr[i] << endl;
+  }
+  cout << "---------------------" << endl;
+  for(int i=0;i<eind.size();i++) {
+    cout << eind[i] << endl;
+  }
+  cout << "---------------------" << endl;
+  for(int i=0;i<points.size();i++) {
+    cout << points[i][0] << points[i][1] << endl;
+  }
+  cout << "---------------------" << endl;
+
+  // capture from A.1.ele
+  // std::vector<idx_t> eind = {0,4,5,4,5,6,4,6,7,4,7,3,0,4,3,0,1,3,1,2,3,2,3,7};
 
   int ret2 = METIS_PartMeshNodal( 
     &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
@@ -429,6 +493,7 @@ int main(int argc, char** argv)
     MPI_Status status;
     int val[2];
     MPI_Recv(val, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    cout << "----------------------------------------" << endl;
     printf("root recev %d,%d from %d with tag = %d\n" , val[0], val[1] , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
     // split the edge and construct local cavity for the midpoint
     // local cavity creation
