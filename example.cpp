@@ -24,53 +24,71 @@ struct Pnt {
 
 // Test Data
 ifstream inFile ("input.txt");
-vector<vector<float>> points
-  {
-    {1,2},{2,3},{-4,6},{-2,3},{4,3},{-10,3},{4,8},
-    {5,-3},{-1,7},{0,5},{4,4},{5,-1}
-  };
+vector<vector<float>> points;
 
 // Vertices XS - x coordinates & YS - y coordinates
 vector<int> XS;
 vector<int> YS;
 
-float threshold1 = 2;
-float threshold2 = 5;
+float threshold1 = 4;
+float threshold2 = 0.5;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
    return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
 }
 
-bool inCircle(Pnt p1, Pnt p2, Pnt p3, Pnt p) {     //check whether p is inside or outside
-   float area = triangleArea (p1, p2, p3);          //area of triangle ABC
-   float area1 = triangleArea (p, p2, p3);         //area of PBC
-   float area2 = triangleArea (p1, p, p3);         //area of APC
-   float area3 = triangleArea (p1, p2, p);        //area of ABP
+bool ccw (float ax, float ay, float bx, float by, float cx, float cy) {
+    return (bx - ax)*(cy - ay)-(cx - ax)*(by - ay) > 0;
+}
 
-   return (area == area1 + area2 + area3);        //when three triangles are forming the whole triangle
+bool inCircle(Pnt p1, Pnt p2, Pnt p3, Pnt p) {     //check whether p is inside or outside
+  bool ccwV = ccw(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+  bool var;
+  
+  float ax_ = p1.x-p.x;
+  float ay_ = p1.y-p.y;
+  float bx_ = p2.x-p.x;
+  float by_ = p2.y-p.y;
+  float cx_ = p3.x-p.x;
+  float cy_ = p3.y-p.y;
+  float val = (ax_*ax_ + ay_*ay_) * (bx_*cy_-cx_*by_) -
+      (bx_*bx_ + by_*by_) * (ax_*cy_-cx_*ay_) +
+      (cx_*cx_ + cy_*cy_) * (ax_*by_-bx_*ay_);
+  if(val > 0) {
+    if(ccwV) {
+      var = 1;
+    } else {
+      var = 0;
+    }
+  } else if (val < 0) {
+    if(ccwV){
+      var = 0;
+    } else {
+      var = 1;
+    }
+  } else {
+    var = 1;
+  }
+  return var;
 }
 
 float* circumcenter(float Px, float Py, float Qx, float Qy, float Rx, float Ry
                     ,float x, float y, float z)
 {
   float* arr = new float[2];
-  cout << x << " " << y << " " << z << endl;
   float angleA = acos((-x*x+y*y+z*z)/(2*y*z));
   float angleB = acos((x*x-y*y+z*z)/(2*x*z));
   float angleC = acos((x*x+y*y-z*z)/(2*x*y));
-
-  cout << angleA << " " << angleB << " " << angleC << endl;
 
   arr[0] = (Px * sin(2*angleA) + Qx*sin(2*angleB) + Rx*sin(2*angleC))/
            (sin(2*angleA) + sin(2*angleB) + sin(2*angleC));
   arr[1] = (Py * sin(2*angleA) + Qy*sin(2*angleB) + Ry*sin(2*angleC))/
            (sin(2*angleA) + sin(2*angleB) + sin(2*angleC));
            
-  cout << arr[0] << " " << arr[1] << endl;
   return arr;
 }
 
-float distance(int x1, int y1, int x2, int y2) 
+float distance(float x1, float y1, float x2, float y2) 
 {
     return sqrt(pow(x2 - x1, 2) +  pow(y2 - y1, 2)); 
 } 
@@ -113,24 +131,24 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
   }
 }
 
-void localCavityCreation(vector<int> &partElements, int &nVertices, vector<vector<float>> &points, Pnt pd)
+void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVertices, vector<vector<float>> &points, Pnt pd, vector<int> &epart, int process_Rank)
 {
   // Local cavity
   // vector to keep track of all the triangles to delete
   vector<int> trashTriangles;
   vector<int> trashIndices;
   // do not use eind here
-  for(int i=0;i<partElements.size()/3;i++) {
-    Pnt pa = {points[partElements[3*i]][0],points[partElements[3*i]][1]};
-    Pnt pb = {points[partElements[3*i+1]][0],points[partElements[3*i+1]][1]};
-    Pnt pc = {points[partElements[3*i+2]][0],points[partElements[3*i+2]][1]};
-    cout << "Pa" << pa.x << " " << pa.y;
-    cout << "Pb" << pb.x << " " << pb.y;
-    cout << "Pc" << pc.x << " " << pc.y;
-    cout << "Pd" << pd.x << " " << pd.y;
+
+  cout << "PartElements size:" << partElements.size() << endl;
+
+  for(int i=0;i<partElements.size();i++) {
+    Pnt pa = {points[eind[partElements[i]*3]][0],points[eind[partElements[i]*3]][1]};
+    Pnt pb = {points[eind[partElements[i]*3+1]][0],points[eind[partElements[i]*3+1]][1]};
+    Pnt pc = {points[eind[partElements[i]*3+2]][0],points[eind[partElements[i]*3+2]][1]};
+
     if(inCircle(pa,pb,pc,pd)) {
       cout << "Lies inside";
-      int a[3] = {partElements[3*i], partElements[3*i+1], partElements[3*i+2]};
+      int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
       trashTriangles.insert(trashTriangles.end(), a, a+3);
       trashIndices.push_back(i);
     } else {
@@ -150,6 +168,11 @@ void localCavityCreation(vector<int> &partElements, int &nVertices, vector<vecto
     // find all the unique edges between these set of triangles
   }
 
+  // cout << "New Edge List:" << endl;
+  // for(int i=0;i<newEdgelist.size();i++) {
+  //   cout << newEdgelist[i] << endl;
+  // }
+
   vector<int> trashEdges;
   for(int i=0;i<newEdgelist.size()/2;i++) {
     for(int j=i;j<newEdgelist.size()/2;j++) {
@@ -168,26 +191,32 @@ void localCavityCreation(vector<int> &partElements, int &nVertices, vector<vecto
   sort(trashEdges.begin(), trashEdges.end(), greater<int>());
   // remove from newEdgeList
   for(int i=0;i<trashEdges.size();i++) {
-    newEdgelist.erase(newEdgelist.begin() + trashEdges[2*i], newEdgelist.begin() + trashEdges[2*i+1]);
+    newEdgelist.erase(newEdgelist.begin() + trashEdges[i]*2, newEdgelist.begin() + trashEdges[i]*2+1);
   }
-
   // adding new vertex
   int newVertexId = nVertices;
-  points[newVertexId] = {pd.x,pd.y};
+
+  // cout << newVertexId << endl;
+  // points[nVertices] = {pd.x,pd.y};
+  points.push_back({pd.x, pd.y});
   nVertices++;
-  
+
+  cout << "Number of vertices:" << nVertices;
+
   // add the remaining edges to cc to form triangles
   for(int i=0;i<newEdgelist.size()/2;i++) {
     // push back all three vertices
-    partElements.push_back(newEdgelist[2*i]);
-    partElements.push_back(newEdgelist[2*i+1]);
-    partElements.push_back(newVertexId);
+    eind.push_back(newEdgelist[2*i]);
+    eind.push_back(newEdgelist[2*i+1]);
+    eind.push_back(nVertices-1);
+    partElements.push_back((eind.size()/3)-1);
+    epart[(eind.size()/3)-1] = process_Rank;
   }
-
+    sort(trashIndices.begin(), trashIndices.end(), greater<int>());
   // trashtriangles contains the list of triangles that needs to be removed
   for(int i=0;i<trashIndices.size();i++) {
-    cout << trashIndices[i] << endl;
-    partElements.erase(partElements.begin() + trashIndices[i], partElements.begin() + trashIndices[i]+2);
+    // cout << trashIndices[i] << endl;
+    partElements.erase(partElements.begin() + trashIndices[i]);
   }
 }
 
@@ -205,31 +234,6 @@ int main(int argc, char** argv)
       XS.push_back(x1);
       YS.push_back(x2);
   }
-
-  // Initialize the Delaunay Triangulation Class
-  DelaunayTriangulation DT(99, 99);
-
-  // Adding points
-  cout << "Adding points:" << endl;
-  for (int i = 0; i < XS.size(); i++)
-  {
-    std::cout << "i: " << i << "/" << XS.size() << ",  ";
-    DT.AddPoint(Point(XS[i], YS[i]));
-  }
-
-  DT.print();
-
-  // get Triangles
-  // DT.getTriangle();
-
-  //hardcodng the vertices in 2d vector format and also the 4 extreme vertices
-  vector<vector<int>> vertices
-    {
-      {7,4,0}, {8,4,5}, {10,3,2}, {10,2,1}, {13,5,4},
-      {13,4,7}, {13,7,6}, {13,6,5}, {14,8,10}, {15,0,4},
-      {15,4,8}, {15,8,14}, {15,14,10}, {15,10,1},
-      {15,1,11}, {15,11,0}
-    };
 
   // checking for the predicates
   // add metis
@@ -259,7 +263,7 @@ int main(int argc, char** argv)
   ///////////////////////////////////////////////////////////////
   // partmeshNodal
   ///////////////////////////////////////////////////////////////
-  idx_t nVertices = 29;
+  int nVertices = 29;
   idx_t nElements = 29;
   idx_t nParts = nProcesses;
 
@@ -288,7 +292,7 @@ int main(int argc, char** argv)
     if (!(iss >> a2 >> b >> c >> d)) { break; } // error
 
     // process pair (a,b)
-    cout << a2 << b << c << endl;
+    // cout << a2 << b << c << endl;
     int v[3] = {b-1, c-1, d-1};
     eind.insert(eind.end(), v, v+3);
     eptr.push_back(3*count);
@@ -310,7 +314,7 @@ int main(int argc, char** argv)
     if (!(iss2 >> a2 >> b >> c >> d)) { break; } // error
 
     // process pair (a,b)
-    cout << a2 << b << c << endl;
+    // cout << a2 << b << c << endl;
     vector<float> v = {b, c};
     points.push_back(v);
     a_c--;
@@ -319,19 +323,11 @@ int main(int argc, char** argv)
   // remove hardcoding
   // std::vector<idx_t> eptr = {8,0,3,6,9,12,15,18,21};
 
-  cout << "---------------------" << endl;
-  for(int i=0;i<eptr.size();i++) {
-    cout << eptr[i] << endl;
-  }
-  cout << "---------------------" << endl;
-  for(int i=0;i<eind.size();i++) {
-    cout << eind[i] << endl;
-  }
-  cout << "---------------------" << endl;
-  for(int i=0;i<points.size();i++) {
-    cout << points[i][0] << points[i][1] << endl;
-  }
-  cout << "---------------------" << endl;
+  // cout << "-----POINTS-------" << endl;
+  // for(int i=0;i<points.size();i++) {
+  //   cout << points[i][0] << points[i][1] << endl;
+  // }
+  // cout << "---------------------" << endl;
 
   // capture from A.1.ele
   // std::vector<idx_t> eind = {0,4,5,4,5,6,4,6,7,4,7,3,0,4,3,0,1,3,1,2,3,2,3,7};
@@ -341,10 +337,10 @@ int main(int argc, char** argv)
     &nParts, NULL, NULL, &objval, epart.data(), npart.data());
     
   // if(process_Rank == 0){
-  //   cout << endl <<"----------Elements Partition-------" << endl;
-  //   for(unsigned part_i = 0; part_i < epart.size(); part_i++){
-  //     std::cout << "Element " << part_i << " Allotted to the P" << epart[part_i] << std::endl;
-  //   }
+    // cout << endl <<"----------Elements Partition-------" << endl;
+    // for(unsigned part_i = 0; part_i < epart.size(); part_i++){
+    //   std::cout << "Element " << part_i << " Allotted to the P" << epart[part_i] << std::endl;
+    // }
 
   //   cout << endl << "----------Nodes Partition----------" << endl;
   //   for(unsigned part_i = 0; part_i < npart.size(); part_i++){
@@ -365,15 +361,22 @@ int main(int argc, char** argv)
     }
   }
 
-  cout << partNodes.size();
-  for(int i=0;i<partElements.size()/3;i++) {
+  // cout << "------------------partElements------------" << endl;
+
+  // for(int i=0;i<partElements.size();i++) {
+  //   cout << partElements[i] << ": " << process_Rank << endl;
+  // }
+
+  for(int i=0;i<partElements.size();i++) {
     //vertices of that triangle
-    int Px = points[eind[i*3]][0];
-    int Py = points[eind[i*3]][1];
-    int Qx = points[eind[i*3+1]][0];
-    int Qy = points[eind[i*3+1]][1];
-    int Rx = points[eind[i*3+2]][0];
-    int Ry = points[eind[i*3+2]][1];
+    float Px = points[eind[partElements[i]*3]][0];
+    float Py = points[eind[partElements[i]*3]][1];
+    float Qx = points[eind[partElements[i]*3+1]][0];
+    float Qy = points[eind[partElements[i]*3+1]][1];
+    float Rx = points[eind[partElements[i]*3+2]][0];
+    float Ry = points[eind[partElements[i]*3+2]][1];
+    
+    // cout << Px << "," << Py << ","<< Qx << ","<< Qy << ","<< Rx << ","<< Ry << endl;
 
     float x = distance(Qx,Qy,Rx,Ry);
     float y = distance(Rx,Ry,Px,Py);
@@ -383,30 +386,39 @@ int main(int argc, char** argv)
     float area = triangle_area(x,y,z);
     float circumRadius = x*y*z/(4*area);
 
+    cout << "circumRadius/shortest" << circumRadius/shortest << endl;
+    cout << "area" << area << endl;
+
     ///////////////////////////////////////////////////////////////
     // obtaining bad triangles
     ///////////////////////////////////////////////////////////////
     if(circumRadius/shortest > threshold1 || area > threshold2) {
       //bad triangle, find the circumcenter
-      cout << "IN" << endl;
-      cout << "Shortest" << shortest << endl;
-      cout << "Circumradius" << circumRadius << endl;
-      cout << "Circum/shortest" << circumRadius/shortest << endl; 
-      cout << "Area" << area << endl;
+      // cout << "IN" << endl;
+      // cout << "Shortest" << shortest << endl;
+      // cout << "Circumradius" << circumRadius << endl;
+      // cout << "Circum/shortest" << circumRadius/shortest << endl; 
+      // cout << "Area" << area << endl;
 
       //circumcenter co-ordinates
       float* ptr = circumcenter(Px,Py,Qx,Qy,Rx,Ry,x,y,z);
 
-      cout << Px << " " << Py << " " << Qx << " " << Qy 
-            << " " << Rx << " " << Ry << endl;
+      // cout << "Triangle:" << Px << " " << Py << " " << Qx << " " << Qy 
+      //       << " " << Rx << " " << Ry << endl;
+      // cout << ptr[0] << ptr[1] << endl;
 
-      cout << ptr[0] << " " << ptr[1] << endl;
+      // cout << ptr[0] << " " << ptr[1] << endl;
       //got circumcenter
 
       //commonedges with processid
-      cout << "eind.length/3" << eind.size()/3 << endl;
+      // cout << "eind.length/3" << eind.size()/3 << endl;
       //total no. of triangles
       int triangleCount = eind.size()/3;
+
+      for(int i=0;i<triangleCount;i++) {
+        cout << "epart" << epart[i] << endl;
+      }
+
       //complexity verify
       std::vector<idx_t> edgeList;
           //using trashEdgeList add the triangles
@@ -415,25 +427,26 @@ int main(int argc, char** argv)
           for(int j=0;j<triangleCount;j++) {
             //check whether the triangles have a common edge
             if(epart[j] != process_Rank){
-              cout << eind[3*i] << eind[3*i+1] << eind[3*i+2] <<
-                              eind[3*j] << eind[3*j+1] << eind[3*j+2] << endl;
+              // cout << eind[3*i] << eind[3*i+1] << eind[3*i+2] <<
+              //                 eind[3*j] << eind[3*j+1] << eind[3*j+2] << endl;
               int* ptr2 = checkCommonEdge(eind[3*i],eind[3*i+1],eind[3*i+2],
                               eind[3*j],eind[3*j+1],eind[3*j+2]);
-              cout << "cEdge[0]:" << ptr2[0] << endl;
-              cout << "cEdge[1]:" << ptr2[1] << endl;
+              // cout << "cEdge[0]:" << ptr2[0] << endl;
+              // cout << "cEdge[1]:" << ptr2[1] << endl;
               if(!(ptr2[0] == -999 && ptr2[1] == -999)){
                 edgeList.push_back(ptr2[0]);
                 edgeList.push_back(ptr2[1]);
-                edgeList.push_back(process_Rank);
+                // cout << "epart[j]" << j << epart[j] << endl;
+                edgeList.push_back(epart[j]);
               }
             }
           }
         }
       }
 
-      for(int i=0;i<edgeList.size();i++) {
-        cout << i << ":" << edgeList[i] << endl;
-      }
+      // for(int i=0;i<edgeList.size();i++) {
+      //   cout << i << ":" << edgeList[i] << endl;
+      // }
 
       // Local cavity
       Pnt pd = {ptr[0], ptr[1]};
@@ -445,21 +458,25 @@ int main(int argc, char** argv)
         float centerY = midPoint(points[edgeList[3*i]][1],points[edgeList[3*i+1]][1]);
         float radius = distance(centerX,centerY,points[edgeList[3*i]][0],
                                 points[edgeList[3*i]][1]);
-        if(pow((ptr[0]-centerX),2)+pow((ptr[0]-centerX),2)-pow(radius,2) < 0) {
+        if(pow((ptr[0]-centerX),2)+pow((ptr[1]-centerY),2)-pow(radius,2) < 0) {
           cout << "Encroaches" << endl;
           // MPI
           // sending mpi message to the respective process
-          int data[2];
-          data[0] = edgeList[3*i]; data[1] = edgeList[3*i+1];
+          int data[3];
+          data[0] = edgeList[3*i]; data[1] = edgeList[3*i+1]; data[2] = edgeList[3*i+2];
           // MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
 
           cout << "Sending MPI Message to designated processes" << endl;
           cout << "-------------------------------------------" << endl;
-          MPI_Send(data,2,MPI_INT,1,0,MPI_COMM_WORLD);
+          cout << "msg is being sent to" << data[2] << endl;
+          // needed fix here
+          if(data[2] < nProcesses)
+          MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
           cout << "-------------------------------------------" << endl;
           cout << endl;
 
-          pd = {centerX, centerY};
+          pd.x = centerX;
+          pd.y = centerY;
           break;
 
         } else { // in bad triangle // common edges
@@ -471,7 +488,25 @@ int main(int argc, char** argv)
       } // end of each common edge check
 
       // local cavity creation
-      localCavityCreation(partElements, nVertices, points, pd);
+      cout << "Hello all" << endl;
+
+      // cout << "PE: " << endl;
+      // for(int i=0;i<partElements.size();i++) {
+      //   cout << partElements[i] << endl;
+      // }
+
+      // cout << "eind: " << endl;
+      // for(int i=0;i<eind.size();i++) {
+      //   cout << eind[i] << endl;
+      // }
+
+      // cout << "points: " << endl;
+      // for(int i=0;i<points.size();i++) {
+      //   cout << points[i][0] << points[i][1] << endl;
+      // }
+
+      localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
+      cout << endl << "Out of local cavity" << endl;
       
     } // end of each bad triangle loop check
 
@@ -480,19 +515,18 @@ int main(int argc, char** argv)
   } // end of each triangle loop check
 
 
-  int val = 55;
-  cout << endl << "Im here" << endl;
+  int data[3];
+  data[0] = 10; data[1] = 11; data[2] = 12;
   for(int i=0;i<nProcesses;i++) {
     if(i == process_Rank)
       continue;
-    MPI_Send(&val, 1, MPI_INT, i, 2, MPI_COMM_WORLD);
+    MPI_Send(data, 3, MPI_INT, i, 2, MPI_COMM_WORLD);
   }
-
 
   while (1) {
     MPI_Status status;
-    int val[2];
-    MPI_Recv(val, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    int val[3];
+    MPI_Recv(val, 3, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     cout << "----------------------------------------" << endl;
     printf("root recev %d,%d from %d with tag = %d\n" , val[0], val[1] , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
     // split the edge and construct local cavity for the midpoint
@@ -501,14 +535,34 @@ int main(int argc, char** argv)
     if(status.MPI_TAG != 2) {
       pd.x = (points[val[0]][0]+points[val[0]][1])/2;
       pd.y = (points[val[1]][0]+points[val[1]][1])/2;
-      localCavityCreation(partElements, nVertices, points, pd);
+      localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
     }
 
-    if (status.MPI_TAG == 2)
-    num_of_DONE++;
-    printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
-    if(num_of_DONE == nProcesses-1)
-    break;
+    if (status.MPI_TAG == 2){
+      // num_of_DONE++;
+      // cout << "Eind:" << eind.size() << endl;
+      // for(int i=0;i<eind.size()/3;i++)
+      //   cout << eind[3*i]+1 << " " << 
+      //   eind[3*i+1]+1 << " " << eind[3*i+2]+1 << endl;
+      // cout << "process ID:" << process_Rank << endl;
+      // for(int i=0;i<partElements.size();i++) {
+      //   cout << partElements[i] << endl;
+      // }
+      cout << "Done from:" << process_Rank;
+      // printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
+      break;
+    }
+    
+    // if(num_of_DONE == nProcesses-1)
+    
+  }
+
+  cout << "P:" << points.size() << endl;
+
+  if(process_Rank == 0) {
+    for(int i=0;i<points.size();i++) {
+      cout << points[i][0] << points[i][1] << endl;
+    }
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
