@@ -30,7 +30,7 @@ vector<vector<float>> points;
 vector<int> XS;
 vector<int> YS;
 
-float threshold1 = 4;
+float threshold1 = 3;
 float threshold2 = 0.5;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
@@ -139,26 +139,30 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   vector<int> trashIndices;
   // do not use eind here
 
-  cout << "PartElements size:" << partElements.size() << endl;
+  cout << "PartElements size:" << partElements.size() << "from:" << process_Rank << endl;
 
   for(int i=0;i<partElements.size();i++) {
     Pnt pa = {points[eind[partElements[i]*3]][0],points[eind[partElements[i]*3]][1]};
     Pnt pb = {points[eind[partElements[i]*3+1]][0],points[eind[partElements[i]*3+1]][1]};
     Pnt pc = {points[eind[partElements[i]*3+2]][0],points[eind[partElements[i]*3+2]][1]};
-
+    //comment cout << "PE[i]" << partElements[i] << endl;
     if(inCircle(pa,pb,pc,pd)) {
-      cout << "Lies inside";
+      cout << "Lies inside" << endl;
+      //comment cout << pa.x << " " << pa.y << " " << pb.x 
+      // << " " << pb.y << " " <<
+      //         pc.x <<  " " << pc.y
+      //         << " " << pd.x << " "<< pd.y << endl;
       int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
       trashTriangles.insert(trashTriangles.end(), a, a+3);
       trashIndices.push_back(i);
     } else {
-      cout << "Lies outside";
+      //comment cout << "Lies outside";
     }
   }
 
   vector<int> newEdgelist;
+  cout << "TTSize:" << trashTriangles.size() << endl;
   for(int i=0;i<trashTriangles.size()/3;i++) {
-    
     newEdgelist.push_back(trashTriangles[3*i]);
     newEdgelist.push_back(trashTriangles[3*i+1]);
     newEdgelist.push_back(trashTriangles[3*i+2]);
@@ -168,7 +172,7 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     // find all the unique edges between these set of triangles
   }
 
-  // cout << "New Edge List:" << endl;
+  //comment cout << "New Edge List:" << endl;
   // for(int i=0;i<newEdgelist.size();i++) {
   //   cout << newEdgelist[i] << endl;
   // }
@@ -201,7 +205,8 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   points.push_back({pd.x, pd.y});
   nVertices++;
 
-  cout << "Number of vertices:" << nVertices;
+  cout << "Number of vertices:" << nVertices << endl;
+  cout << "New edgelist size:" << newEdgelist.size() << endl;
 
   // add the remaining edges to cc to form triangles
   for(int i=0;i<newEdgelist.size()/2;i++) {
@@ -218,6 +223,14 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     // cout << trashIndices[i] << endl;
     partElements.erase(partElements.begin() + trashIndices[i]);
   }
+
+  //comment for(int i=0;i<partElements.size();i++) {
+  //   cout << "PESize:" << partElements[i] << endl;
+  // }
+
+  newEdgelist.clear();
+  trashTriangles.clear();
+  trashIndices.clear();
 }
 
 int main(int argc, char** argv)
@@ -368,6 +381,8 @@ int main(int argc, char** argv)
   // }
 
   for(int i=0;i<partElements.size();i++) {
+    if(partElements[i]>30)
+    break;
     //vertices of that triangle
     float Px = points[eind[partElements[i]*3]][0];
     float Py = points[eind[partElements[i]*3]][1];
@@ -415,10 +430,6 @@ int main(int argc, char** argv)
       //total no. of triangles
       int triangleCount = eind.size()/3;
 
-      for(int i=0;i<triangleCount;i++) {
-        cout << "epart" << epart[i] << endl;
-      }
-
       //complexity verify
       std::vector<idx_t> edgeList;
           //using trashEdgeList add the triangles
@@ -459,7 +470,7 @@ int main(int argc, char** argv)
         float radius = distance(centerX,centerY,points[edgeList[3*i]][0],
                                 points[edgeList[3*i]][1]);
         if(pow((ptr[0]-centerX),2)+pow((ptr[1]-centerY),2)-pow(radius,2) < 0) {
-          cout << "Encroaches" << endl;
+          // cout << "Encroaches" << endl;
           // MPI
           // sending mpi message to the respective process
           int data[3];
@@ -470,7 +481,7 @@ int main(int argc, char** argv)
           cout << "-------------------------------------------" << endl;
           cout << "msg is being sent to" << data[2] << endl;
           // needed fix here
-          if(data[2] < nProcesses)
+          // if(data[2] < nProcesses)
           MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
           cout << "-------------------------------------------" << endl;
           cout << endl;
@@ -481,7 +492,7 @@ int main(int argc, char** argv)
 
         } else { // in bad triangle // common edges
 
-          cout << "Doesnot Encroaches" << endl;
+          // cout << "Doesnot Encroaches" << endl;
 
         } // end of doesnot encroaches loop
 
@@ -564,6 +575,15 @@ int main(int argc, char** argv)
       cout << points[i][0] << points[i][1] << endl;
     }
   }
+
+  //comment cout << process_Rank << endl;
+  // for(int i=0;i<partElements.size();i++) {
+  //   cout << partElements[i] << endl;
+  // }
+
+  //comment for(int i=0;i<eind.size();i++) {
+  //   cout << "eind.size()" << eind[i] << endl;
+  // }
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
