@@ -139,6 +139,8 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   vector<int> trashIndices;
   // do not use eind here
 
+  cout << "Point to be added: " << pd.x << "," << pd.y << endl;
+
   cout << "PartElements size:" << partElements.size() << "from:" << process_Rank << endl;
 
   for(int i=0;i<partElements.size();i++) {
@@ -214,6 +216,7 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     eind.push_back(newEdgelist[2*i]);
     eind.push_back(newEdgelist[2*i+1]);
     eind.push_back(nVertices-1);
+    cout << "Added for:" << process_Rank << (eind.size()/3)-1;
     partElements.push_back((eind.size()/3)-1);
     epart[(eind.size()/3)-1] = process_Rank;
   }
@@ -349,11 +352,12 @@ int main(int argc, char** argv)
     &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
     &nParts, NULL, NULL, &objval, epart.data(), npart.data());
     
-  // if(process_Rank == 0){
-    // cout << endl <<"----------Elements Partition-------" << endl;
-    // for(unsigned part_i = 0; part_i < epart.size(); part_i++){
-    //   std::cout << "Element " << part_i << " Allotted to the P" << epart[part_i] << std::endl;
-    // }
+  if(process_Rank == 0){
+    cout << endl <<"----------Elements Partition-------" << endl;
+    for(unsigned part_i = 0; part_i < epart.size(); part_i++){
+      std::cout << "Element " << part_i << " Allotted to the P" << epart[part_i] << std::endl;
+    }
+  }
 
   //   cout << endl << "----------Nodes Partition----------" << endl;
   //   for(unsigned part_i = 0; part_i < npart.size(); part_i++){
@@ -550,21 +554,11 @@ int main(int argc, char** argv)
     }
 
     if (status.MPI_TAG == 2){
-      // num_of_DONE++;
-      // cout << "Eind:" << eind.size() << endl;
-      // for(int i=0;i<eind.size()/3;i++)
-      //   cout << eind[3*i]+1 << " " << 
-      //   eind[3*i+1]+1 << " " << eind[3*i+2]+1 << endl;
-      // cout << "process ID:" << process_Rank << endl;
-      // for(int i=0;i<partElements.size();i++) {
-      //   cout << partElements[i] << endl;
-      // }
-      cout << "Done from:" << process_Rank;
-      // printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
+      num_of_DONE++;
+      printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
+      if(num_of_DONE == nProcesses-1)
       break;
     }
-    
-    // if(num_of_DONE == nProcesses-1)
     
   }
 
@@ -576,10 +570,10 @@ int main(int argc, char** argv)
     }
   }
 
-  //comment cout << process_Rank << endl;
-  // for(int i=0;i<partElements.size();i++) {
-  //   cout << partElements[i] << endl;
-  // }
+  cout << process_Rank << endl;
+  for(int i=0;i<partElements.size();i++) {
+    cout << partElements[i] << endl;
+  }
 
   //comment for(int i=0;i<eind.size();i++) {
   //   cout << "eind.size()" << eind[i] << endl;
