@@ -220,7 +220,7 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     partElements.push_back((eind.size()/3)-1);
     epart[(eind.size()/3)-1] = process_Rank;
   }
-    sort(trashIndices.begin(), trashIndices.end(), greater<int>());
+  sort(trashIndices.begin(), trashIndices.end(), greater<int>());
   // trashtriangles contains the list of triangles that needs to be removed
   for(int i=0;i<trashIndices.size();i++) {
     // cout << trashIndices[i] << endl;
@@ -250,31 +250,6 @@ int main(int argc, char** argv)
       XS.push_back(x1);
       YS.push_back(x2);
   }
-
-  // checking for the predicates
-  // add metis
-  // add mpi codes and compilation tags
-
-  ////////////////////////////////////////////////////////////////
-  // mpi process
-  // message between and parallelization between threads
-  ////////////////////////////////////////////////////////////////
-  // To run: mpic++ hello_world_mpi.cpp -o hello_world_mpi
-  // To execute: mpirun -np 2 ./hello_world_mpi
-  ////////////////////////////////////////////////////////////////
-  int process_Rank, size_Of_Cluster, message_Item;
-
-  MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &size_Of_Cluster);
-  MPI_Comm_rank(MPI_COMM_WORLD, &process_Rank);
-
-  ////////////////////////////////////////////////////////////////
-  // metis example
-  // To partition graphs or/and data.
-  ////////////////////////////////////////////////////////////////
-  // To compile: g++ -std=c++11 metis_example.cpp -lmetis
-  // To run: ./metis_example
-  ///////////////////////////////////////////////////////////////
 
   ///////////////////////////////////////////////////////////////
   // partmeshNodal
@@ -352,6 +327,32 @@ int main(int argc, char** argv)
     &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
     &nParts, NULL, NULL, &objval, epart.data(), npart.data());
     
+  // checking for the predicates
+  // add metis
+  // add mpi codes and compilation tags
+
+  ////////////////////////////////////////////////////////////////
+  // mpi process
+  // message between and parallelization between threads
+  ////////////////////////////////////////////////////////////////
+  // To run: mpic++ hello_world_mpi.cpp -o hello_world_mpi
+  // To execute: mpirun -np 2 ./hello_world_mpi
+  ////////////////////////////////////////////////////////////////
+  int process_Rank, size_Of_Cluster, message_Item;
+
+  MPI_Init(&argc, &argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &size_Of_Cluster);
+  MPI_Comm_rank(MPI_COMM_WORLD, &process_Rank);
+
+  ////////////////////////////////////////////////////////////////
+  // metis example
+  // To partition graphs or/and data.
+  ////////////////////////////////////////////////////////////////
+  // To compile: g++ -std=c++11 metis_example.cpp -lmetis
+  // To run: ./metis_example
+  ///////////////////////////////////////////////////////////////
+
+  
   if(process_Rank == 0){
     cout << endl <<"----------Elements Partition-------" << endl;
     for(unsigned part_i = 0; part_i < epart.size(); part_i++){
@@ -521,6 +522,11 @@ int main(int argc, char** argv)
       // }
 
       localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
+      // MPI_Bcast(&points,points.size(),MPI_FLOAT,process_Rank,MPI_COMM_WORLD);
+      // cout << endl << "From BC:" << process_Rank << points.size() << endl;
+      // MPI_Bcast(&nVertices,1,MPI_INT,process_Rank,MPI_COMM_WORLD);
+      // MPI_Bcast(&eind,eind.size(),MPI_INT,process_Rank,MPI_COMM_WORLD);
+      // MPI_Bcast(&epart,epart.size(),MPI_INT,process_Rank,MPI_COMM_WORLD);
       cout << endl << "Out of local cavity" << endl;
       
     } // end of each bad triangle loop check
@@ -556,11 +562,25 @@ int main(int argc, char** argv)
     if (status.MPI_TAG == 2){
       num_of_DONE++;
       printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
-      if(num_of_DONE == nProcesses-1)
-      break;
+      if(num_of_DONE == nProcesses-1){
+        //send current points, partElements and eind to file
+        std::ofstream outfile ("test"+std::to_string(process_Rank) +".txt");
+        outfile << partElements.size() << endl;
+        for(int i=0;i<partElements.size();i++) {
+          outfile << partElements[i] << endl;
+        }
+        outfile << eind.size() << endl;
+        for(int i=0;i<eind.size();i++) {
+          outfile << eind[i] << endl;
+        }
+        outfile << points.size() << endl;
+        for(int i=0;i<points.size();i++){
+          outfile << points[i][0] << " " << points[i][1] << endl;
+        }
+        break;
+      }
     }
-    
-  }
+}
 
   cout << "P:" << points.size() << endl;
 
@@ -575,8 +595,9 @@ int main(int argc, char** argv)
     cout << partElements[i] << endl;
   }
 
-  //comment for(int i=0;i<eind.size();i++) {
-  //   cout << "eind.size()" << eind[i] << endl;
+  // all processes send their extra points and eind to P0 where P0 does all the calculations
+  // comment for(int i=0;i<eind.size();i++) {
+  // cout << "eind.size()" << eind[i] << endl;
   // }
 
   MPI_Barrier(MPI_COMM_WORLD);
