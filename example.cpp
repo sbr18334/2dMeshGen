@@ -178,7 +178,6 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   // for(int i=0;i<newEdgelist.size();i++) {
   //   cout << newEdgelist[i] << endl;
   // }
-
   vector<int> trashEdges;
   for(int i=0;i<newEdgelist.size()/2;i++) {
     for(int j=i;j<newEdgelist.size()/2;j++) {
@@ -352,7 +351,6 @@ int main(int argc, char** argv)
   // To run: ./metis_example
   ///////////////////////////////////////////////////////////////
 
-  
   if(process_Rank == 0){
     cout << endl <<"----------Elements Partition-------" << endl;
     for(unsigned part_i = 0; part_i < epart.size(); part_i++){
