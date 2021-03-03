@@ -129,11 +129,11 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   // vector to keep track of all the triangles to delete
   vector<int> trashTriangles;
   vector<int> trashIndices;
-  
   for(int i=0;i<partElements.size();i++) {
     Pnt pa = {points[eind[partElements[i]*3]][0],points[eind[partElements[i]*3]][1]};
     Pnt pb = {points[eind[partElements[i]*3+1]][0],points[eind[partElements[i]*3+1]][1]};
     Pnt pc = {points[eind[partElements[i]*3+2]][0],points[eind[partElements[i]*3+2]][1]};
+    
     if(inCircle(pa,pb,pc,pd)) {
       cout << "Lies inside" << endl;
       int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
@@ -178,7 +178,6 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   }
   // adding new vertex
   int newVertexId = nVertices;
-
   points.push_back({pd.x, pd.y});
   nVertices++;
 
