@@ -53,17 +53,11 @@ bool inCircle(Pnt p1, Pnt p2, Pnt p3, Pnt p) {     //check whether p is inside o
       (bx_*bx_ + by_*by_) * (ax_*cy_-cx_*ay_) +
       (cx_*cx_ + cy_*cy_) * (ax_*by_-bx_*ay_);
   if(val > 0) {
-    if(ccwV) {
-      var = 1;
-    } else {
-      var = 0;
-    }
+    if(ccwV) { var = 1; } 
+    else { var = 0; }
   } else if (val < 0) {
-    if(ccwV){
-      var = 0;
-    } else {
-      var = 1;
-    }
+    if(ccwV){ var = 0; }
+    else { var = 1; }
   } else {
     var = 1;
   }
@@ -135,23 +129,13 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   // vector to keep track of all the triangles to delete
   vector<int> trashTriangles;
   vector<int> trashIndices;
-  // do not use eind here
-
-  cout << "Point to be added: " << pd.x << "," << pd.y << endl;
-
-  cout << "PartElements size:" << partElements.size() << "from:" << process_Rank << endl;
-
   for(int i=0;i<partElements.size();i++) {
     Pnt pa = {points[eind[partElements[i]*3]][0],points[eind[partElements[i]*3]][1]};
     Pnt pb = {points[eind[partElements[i]*3+1]][0],points[eind[partElements[i]*3+1]][1]};
     Pnt pc = {points[eind[partElements[i]*3+2]][0],points[eind[partElements[i]*3+2]][1]};
-    //comment cout << "PE[i]" << partElements[i] << endl;
+    
     if(inCircle(pa,pb,pc,pd)) {
       cout << "Lies inside" << endl;
-      //comment cout << pa.x << " " << pa.y << " " << pb.x 
-      // << " " << pb.y << " " <<
-      //         pc.x <<  " " << pc.y
-      //         << " " << pd.x << " "<< pd.y << endl;
       int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
       trashTriangles.insert(trashTriangles.end(), a, a+3);
       trashIndices.push_back(i);
@@ -172,10 +156,6 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     // find all the unique edges between these set of triangles
   }
 
-  //comment cout << "New Edge List:" << endl;
-  // for(int i=0;i<newEdgelist.size();i++) {
-  //   cout << newEdgelist[i] << endl;
-  // }
   vector<int> trashEdges;
   for(int i=0;i<newEdgelist.size()/2;i++) {
     for(int j=i;j<newEdgelist.size()/2;j++) {
@@ -198,9 +178,6 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   }
   // adding new vertex
   int newVertexId = nVertices;
-
-  // cout << newVertexId << endl;
-  // points[nVertices] = {pd.x,pd.y};
   points.push_back({pd.x, pd.y});
   nVertices++;
 
@@ -220,13 +197,8 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   sort(trashIndices.begin(), trashIndices.end(), greater<int>());
   // trashtriangles contains the list of triangles that needs to be removed
   for(int i=0;i<trashIndices.size();i++) {
-    // cout << trashIndices[i] << endl;
     partElements.erase(partElements.begin() + trashIndices[i]);
   }
-
-  //comment for(int i=0;i<partElements.size();i++) {
-  //   cout << "PESize:" << partElements[i] << endl;
-  // }
 
   newEdgelist.clear();
   trashTriangles.clear();
