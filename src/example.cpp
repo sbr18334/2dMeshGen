@@ -29,7 +29,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 0.5;
+float threshold2 = 0.45;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
    return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
@@ -125,8 +125,6 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
 
 void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVertices, vector<vector<float>> &points, Pnt pd, vector<int> &epart, int process_Rank)
 {
-  // Local cavity
-  // vector to keep track of all the triangles to delete
   vector<int> trashTriangles;
   vector<int> trashIndices;
   for(int i=0;i<partElements.size();i++) {
@@ -135,17 +133,13 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     Pnt pc = {points[eind[partElements[i]*3+2]][0],points[eind[partElements[i]*3+2]][1]};
     
     if(inCircle(pa,pb,pc,pd)) {
-      cout << "Lies inside" << endl;
       int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
       trashTriangles.insert(trashTriangles.end(), a, a+3);
       trashIndices.push_back(i);
-    } else {
-      //comment cout << "Lies outside";
     }
   }
 
   vector<int> newEdgelist;
-  cout << "TTSize:" << trashTriangles.size() << endl;
   for(int i=0;i<trashTriangles.size()/3;i++) {
     newEdgelist.push_back(trashTriangles[3*i]);
     newEdgelist.push_back(trashTriangles[3*i+1]);
@@ -214,8 +208,8 @@ int main(int argc, char** argv)
   ///////////////////////////////////////////////////////////////
   // partmeshNodal
   ///////////////////////////////////////////////////////////////
-  int nVertices = 29;
-  idx_t nElements = 29;
+  int nVertices = 134;
+  idx_t nElements = 210;
   idx_t nParts = nProcesses;
 
   idx_t objval;
@@ -226,7 +220,7 @@ int main(int argc, char** argv)
   std::vector<idx_t> eind;
   std::vector<idx_t> eptr;
 
-  std::ifstream infile("../input/A.1.ele");
+  std::ifstream infile("../input/A2.1.ele");
   std::string line;
   std::getline(infile, line);
   std::istringstream iss(line);
@@ -247,13 +241,13 @@ int main(int argc, char** argv)
     a--;count++;
   }
 
-  std::ifstream infile2("../input/A.1.node");
+  std::ifstream infile2("../input/A2.1.node");
   std::string line2;
   std::getline(infile2, line2);
   std::istringstream iss2(line2);
   int a_c;
   if (!(iss2 >> a_c)) {}
-  cout << a;
+  cout << a_c;
   while (a_c > 0)
   {
     std::getline(infile2, line2);
@@ -302,13 +296,14 @@ int main(int argc, char** argv)
     if(npart[part_i] == process_Rank) {
       partNodes.push_back(part_i);
     }
+  }
+  for(unsigned part_i = 0; part_i < epart.size(); part_i++){
     if(epart[part_i] == process_Rank) {
       partElements.push_back(part_i);
     }
   }
-
   for(int i=0;i<partElements.size();i++) {
-    if(partElements[i]>30)
+    if(partElements[i]>210) // fix here
     break;
     //vertices of that triangle
     float Px = points[eind[partElements[i]*3]][0];
@@ -426,6 +421,7 @@ int main(int argc, char** argv)
       printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
       if(num_of_DONE == nProcesses-1){
         std::ofstream outfile ("../output/test"+std::to_string(process_Rank) +".txt");
+        cout << partElements.size() << endl;
         outfile << partElements.size() << endl;
         for(int i=0;i<partElements.size();i++) {
           outfile << partElements[i] << endl;
@@ -443,18 +439,18 @@ int main(int argc, char** argv)
     }
 }
 
-  cout << "P:" << points.size() << endl;
+  // cout << "P:" << points.size() << endl;
 
-  if(process_Rank == 0) {
-    for(int i=0;i<points.size();i++) {
-      cout << points[i][0] << points[i][1] << endl;
-    }
-  }
+  // if(process_Rank == 0) {
+  //   for(int i=0;i<points.size();i++) {
+  //     cout << points[i][0] << points[i][1] << endl;
+  //   }
+  // }
 
-  cout << process_Rank << endl;
-  for(int i=0;i<partElements.size();i++) {
-    cout << partElements[i] << endl;
-  }
+  // cout << process_Rank << endl;
+  // for(int i=0;i<partElements.size();i++) {
+  //   cout << partElements[i] << endl;
+  // }
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
