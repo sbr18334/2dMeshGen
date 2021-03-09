@@ -29,7 +29,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 0.45;
+float threshold2 = 0.35;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
    return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
@@ -168,7 +168,8 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   sort(trashEdges.begin(), trashEdges.end(), greater<int>());
   // remove from newEdgeList
   for(int i=0;i<trashEdges.size();i++) {
-    newEdgelist.erase(newEdgelist.begin() + trashEdges[i]*2, newEdgelist.begin() + trashEdges[i]*2+1);
+    newEdgelist.erase(newEdgelist.begin() + trashEdges[i]*2+1);
+    newEdgelist.erase(newEdgelist.begin() + trashEdges[i]*2);
   }
   // adding new vertex
   int newVertexId = nVertices;
@@ -181,9 +182,14 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   // add the remaining edges to cc to form triangles
   for(int i=0;i<newEdgelist.size()/2;i++) {
     // push back all three vertices
+    if(midPoint(points[newEdgelist[2*i]][0], points[newEdgelist[2*i+1]][0])
+    == pd.x && midPoint(points[newEdgelist[2*i]][1], points[newEdgelist[2*i+1]][1])
+    == pd.y) {
+      continue;
+    }
     eind.push_back(newEdgelist[2*i]);
     eind.push_back(newEdgelist[2*i+1]);
-    eind.push_back(nVertices-1);
+    eind.push_back(newVertexId);
     cout << "Added for:" << process_Rank << (eind.size()/3)-1;
     partElements.push_back((eind.size()/3)-1);
     epart[(eind.size()/3)-1] = process_Rank;
@@ -303,8 +309,8 @@ int main(int argc, char** argv)
     }
   }
   for(int i=0;i<partElements.size();i++) {
-    if(partElements[i]>210) // fix here
-    break;
+    // if(partElements[i]>60) // fix here
+    // break;
     //vertices of that triangle
     float Px = points[eind[partElements[i]*3]][0];
     float Py = points[eind[partElements[i]*3]][1];
