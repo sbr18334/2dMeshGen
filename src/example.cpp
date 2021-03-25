@@ -28,7 +28,7 @@ vector<vector<float>> points;
 vector<int> XS;
 vector<int> YS;
 
-float threshold1 = 2.25;
+float threshold1 = 3;
 float threshold2 = 0.3;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
