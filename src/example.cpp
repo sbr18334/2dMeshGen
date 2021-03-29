@@ -138,7 +138,6 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     << pb.x << " " <<  pb.y << " " << 
      pc.x <<  " " << pc.y <<  " " << pd.x <<  " " << pd.y << endl;
     if(inCircle(pa,pb,pc,pd)) {
-      cout << "In" << endl;
       int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
       trashTriangles.insert(trashTriangles.end(), a, a+3);
       trashIndices.push_back(i);
