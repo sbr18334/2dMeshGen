@@ -29,7 +29,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 0.35;
+float threshold2 = 0.3;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
    return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
@@ -127,17 +127,24 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
 {
   vector<int> trashTriangles;
   vector<int> trashIndices;
+  cout << "PE size:" << partElements.size();
   for(int i=0;i<partElements.size();i++) {
+    cout << "PE:" << partElements[i] << " " << eind[partElements[i]*3] 
+    << " " << eind[partElements[i]*3+1] << " " << eind[partElements[i]*3+2];
     Pnt pa = {points[eind[partElements[i]*3]][0],points[eind[partElements[i]*3]][1]};
     Pnt pb = {points[eind[partElements[i]*3+1]][0],points[eind[partElements[i]*3+1]][1]};
     Pnt pc = {points[eind[partElements[i]*3+2]][0],points[eind[partElements[i]*3+2]][1]};
-    
+    cout << pa.x << " " << pa.y << " " 
+    << pb.x << " " <<  pb.y << " " << 
+     pc.x <<  " " << pc.y <<  " " << pd.x <<  " " << pd.y << endl;
     if(inCircle(pa,pb,pc,pd)) {
       int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
       trashTriangles.insert(trashTriangles.end(), a, a+3);
       trashIndices.push_back(i);
     }
   }
+
+  cout << "TT:" << trashTriangles.size() << endl;
 
   vector<int> newEdgelist;
   for(int i=0;i<trashTriangles.size()/3;i++) {
@@ -187,9 +194,8 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     == pd.y) {
       continue;
     }
-    eind.push_back(newEdgelist[2*i]);
-    eind.push_back(newEdgelist[2*i+1]);
-    eind.push_back(newVertexId);
+    int a[3] = {newEdgelist[2*i], newEdgelist[2*i+1], newVertexId};
+    eind.insert(eind.end(), a, a+3);
     cout << "Added for:" << process_Rank << (eind.size()/3)-1;
     partElements.push_back((eind.size()/3)-1);
     epart[(eind.size()/3)-1] = process_Rank;
@@ -198,7 +204,7 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   // trashtriangles contains the list of triangles that needs to be removed
   for(int i=0;i<trashIndices.size();i++) {
     partElements.erase(partElements.begin() + trashIndices[i]);
-  }
+}
 
   newEdgelist.clear();
   trashTriangles.clear();
@@ -382,6 +388,8 @@ int main(int argc, char** argv)
 
           pd.x = centerX;
           pd.y = centerY;
+
+          cout << "Encroaches" << endl;
           break;
 
         } else {
@@ -390,8 +398,14 @@ int main(int argc, char** argv)
       } // end of each common edge check
 
       // local cavity creation
-      cout << "Hello all" << endl;
-
+      cout << pd.x << pd.y << "up:" << process_Rank << endl;
+      bool boolean = true;
+      for(int i=0;i<points.size();i++) {
+        if(pd.x == points[i][0] && pd.y == points[i][1]) {
+          boolean = false;
+        }
+      }
+      if(boolean)
       localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
       cout << endl << "Out of local cavity" << endl;
       
@@ -417,8 +431,16 @@ int main(int argc, char** argv)
     printf("root recev %d,%d from %d with tag = %d\n" , val[0], val[1] , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
     Pnt pd;
     if(status.MPI_TAG != 2) {
-      pd.x = (points[val[0]][0]+points[val[0]][1])/2;
-      pd.y = (points[val[1]][0]+points[val[1]][1])/2;
+      pd.x = midPoint(points[val[0]][0],points[val[1]][0]);
+      pd.y = midPoint(points[val[0]][1],points[val[1]][1]);
+      cout << pd.x << pd.y << "down:" << process_Rank << endl;
+      bool boolean = true;
+      for(int i=0;i<points.size();i++) {
+        if(pd.x == points[i][0] && pd.y == points[i][1]) {
+          boolean = false;
+        }
+      }
+      if(boolean)
       localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
     }
 
@@ -444,19 +466,6 @@ int main(int argc, char** argv)
       }
     }
 }
-
-  // cout << "P:" << points.size() << endl;
-
-  // if(process_Rank == 0) {
-  //   for(int i=0;i<points.size();i++) {
-  //     cout << points[i][0] << points[i][1] << endl;
-  //   }
-  // }
-
-  // cout << process_Rank << endl;
-  // for(int i=0;i<partElements.size();i++) {
-  //   cout << partElements[i] << endl;
-  // }
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
