@@ -151,6 +151,31 @@ void writeToFiles(vector<int> &partElements, vector<int> &eind, vector<vector<fl
   }
 }
 
+float* getMetrics(vector<vector<float>> &points, vector<int> &eind, vector<int> &partElements, int i) {
+  float Px = points[eind[partElements[i]*3]][0];
+  float Py = points[eind[partElements[i]*3]][1];
+  float Qx = points[eind[partElements[i]*3+1]][0];
+  float Qy = points[eind[partElements[i]*3+1]][1];
+  float Rx = points[eind[partElements[i]*3+2]][0];
+  float Ry = points[eind[partElements[i]*3+2]][1];
+  
+  float x = distance(Qx,Qy,Rx,Ry);
+  float y = distance(Rx,Ry,Px,Py);
+  float z = distance(Px,Py,Qx,Qy);
+
+  float shortest = x < y ? (x < z ? x : z) : (y < z ? y : z);
+  float area = triangle_area(x,y,z);
+  float circumRadius = x*y*z/(4*area);
+
+  cout << "circumRadius/shortest" << circumRadius/shortest << endl;
+  cout << "area" << area << endl;
+  static float r[11];
+  r[0] = circumRadius/shortest;
+  r[1] = area; r[2] = Px; r[3] = Py; r[4] = Qx; r[5] = Qy;
+  r[6] = Rx; r[7] = Ry; r[8] = x; r[9] = y; r[10] = z;
+  return r;
+}
+
 void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVertices, vector<vector<float>> &points, Pnt pd, vector<int> &epart, int process_Rank)
 {
   vector<int> trashTriangles;
@@ -253,7 +278,6 @@ gettimeofday(&tv1, NULL);
   ///////////////////////////////////////////////////////////////
   int nVertices = 33343;
   idx_t nElements = 64125;
-  idx_t nParts = nProcesses;
 
   idx_t objval;
   std::vector<idx_t> epart(nElements, 0);
@@ -379,31 +403,16 @@ gettimeofday(&tv1, NULL);
 
   for(int i=0;i<partElements.size();i++) {
     //vertices of that triangle
-    float Px = points[eind[partElements[i]*3]][0];
-    float Py = points[eind[partElements[i]*3]][1];
-    float Qx = points[eind[partElements[i]*3+1]][0];
-    float Qy = points[eind[partElements[i]*3+1]][1];
-    float Rx = points[eind[partElements[i]*3+2]][0];
-    float Ry = points[eind[partElements[i]*3+2]][1];
-    
-    float x = distance(Qx,Qy,Rx,Ry);
-    float y = distance(Rx,Ry,Px,Py);
-    float z = distance(Px,Py,Qx,Qy);
-
-    float shortest = x < y ? (x < z ? x : z) : (y < z ? y : z);
-    float area = triangle_area(x,y,z);
-    float circumRadius = x*y*z/(4*area);
-
-    cout << "circumRadius/shortest" << circumRadius/shortest << endl;
-    cout << "area" << area << endl;
+    float* temp = getMetrics(points, eind, partElements, i);
 
     ///////////////////////////////////////////////////////////////
     // obtaining bad triangles
     ///////////////////////////////////////////////////////////////
-    if(circumRadius/shortest > threshold1 || area > threshold2) {
+    if(temp[0] > threshold1 || temp[1] > threshold2) {
 
       //circumcenter co-ordinates
-      float* ptr = circumcenter(Px,Py,Qx,Qy,Rx,Ry,x,y,z);
+      float* ptr = circumcenter(temp[2],temp[3],temp[4]
+      ,temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
       
       // Local cavity
       Pnt pd = {ptr[0], ptr[1]};
