@@ -239,8 +239,8 @@ gettimeofday(&tv1, NULL);
     std::getline(infile, line);
     std::istringstream issT(line);
     int a2, b2, c2, d;
-    if (!(issT >> a2 >> b >> c >> d)) { break; }
-    int v[3] = {b-1, c-1, d-1};
+    if (!(issT >> a2 >> b2 >> c2 >> d)) { break; }
+    int v[3] = {b2-1, c2-1, d-1};
     // eind.insert(eind.end(), v, v+3);
     eind1[eindIndex] = b2-1;eindIndex++;
     eind1[eindIndex] = c2-1;eindIndex++;
