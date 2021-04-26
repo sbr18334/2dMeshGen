@@ -31,7 +31,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 2;
+float threshold2 = 2.1;
 
 bool ccw (float ax, float ay, float bx, float by, float cx, float cy) {
     return (bx - ax)*(cy - ay)-(cx - ax)*(by - ay) > 0;
@@ -122,6 +122,23 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
   else {
     arr[0] = -999;arr[1] = -999;
     return arr;
+  }
+}
+
+void writeToFiles(vector<int> &partElements, vector<int> &eind, vector<vector<float>> &points, int process_Rank) {
+  std::ofstream outfile ("../output/test"+std::to_string(process_Rank) +".txt");
+  cout << partElements.size() << endl;
+  outfile << partElements.size() << endl;
+  for(int i=0;i<partElements.size();i++) {
+    outfile << partElements[i] << endl;
+  }
+  outfile << eind.size() << endl;
+  for(int i=0;i<eind.size();i++) {
+    outfile << eind[i] << endl;
+  }
+  outfile << points.size() << endl;
+  for(int i=0;i<points.size();i++){
+    outfile << points[i][0] << " " << points[i][1] << endl;
   }
 }
 
@@ -356,8 +373,6 @@ gettimeofday(&tv1, NULL);
     cout << "circumRadius/shortest" << circumRadius/shortest << endl;
     cout << "area" << area << endl;
 
-    //int triangleCount = eind.size()/3;
-
     ///////////////////////////////////////////////////////////////
     // obtaining bad triangles
     ///////////////////////////////////////////////////////////////
@@ -383,7 +398,6 @@ gettimeofday(&tv1, NULL);
             if(pow((ptr[0]-centerX),2)+pow((ptr[1]-centerY),2)-pow(radius,2) < 0) {
               int data[3];
               data[0] = ptr2[0]; data[1] = ptr2[1]; data[2] = epart[j];
-              // MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
 
               cout << "Sending MPI Message to designated processes" << endl;
               cout << "-------------------------------------------" << endl;
@@ -397,7 +411,6 @@ gettimeofday(&tv1, NULL);
 
               cout << "Encroaches" << endl;
               break;
-
             }
           }
         }
@@ -422,8 +435,7 @@ gettimeofday(&tv1, NULL);
 
   } // end of each triangle loop check
 
-  int data[3];
-  data[0] = 10; data[1] = 11; data[2] = 12;
+  int data[3] = {10, 11, 12};
   for(int i=0;i<nProcesses;i++) {
     if(i == process_Rank)
       continue;
@@ -455,24 +467,11 @@ gettimeofday(&tv1, NULL);
       num_of_DONE++;
       printf("num_of_DONE=%d\n" , num_of_DONE);fflush(stdout);
       if(num_of_DONE == nProcesses-1){
-        std::ofstream outfile ("../output/test"+std::to_string(process_Rank) +".txt");
-        cout << partElements.size() << endl;
-        outfile << partElements.size() << endl;
-        for(int i=0;i<partElements.size();i++) {
-          outfile << partElements[i] << endl;
-        }
-        outfile << eind.size() << endl;
-        for(int i=0;i<eind.size();i++) {
-          outfile << eind[i] << endl;
-        }
-        outfile << points.size() << endl;
-        for(int i=0;i<points.size();i++){
-          outfile << points[i][0] << " " << points[i][1] << endl;
-        }
+        writeToFiles(partElements, eind, points, process_Rank);
         break;
       }
     }
-}
+  }
   partElements.clear();
   epart.clear();
   eind.clear();
