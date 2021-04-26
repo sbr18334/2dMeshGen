@@ -374,6 +374,9 @@ gettimeofday(&tv1, NULL);
       //circumcenter co-ordinates
       float* ptr = circumcenter(Px,Py,Qx,Qy,Rx,Ry,x,y,z);
       
+      // Local cavity
+      Pnt pd = {ptr[0], ptr[1]};
+
       std::vector<idx_t> edgeList;
       for(int j=0;j<triangleCount;j++) {
         //check whether the triangles have a common edge
@@ -381,45 +384,35 @@ gettimeofday(&tv1, NULL);
           int* ptr2 = checkCommonEdge(eind[3*partElements[i]],eind[3*partElements[i]+1],eind[3*partElements[i]+2],
                         eind[3*j],eind[3*j+1],eind[3*j+2]);
           if(!(ptr2[0] == -999 && ptr2[1] == -999)){
-            edgeList.push_back(ptr2[0]);
-            edgeList.push_back(ptr2[1]);
-            edgeList.push_back(epart[j]);
+            // edgeList.push_back(ptr2[0]);
+            // edgeList.push_back(ptr2[1]);
+            // edgeList.push_back(epart[j]);
+            float centerX = midPoint(points[ptr2[0]][0],points[ptr2[1]][0]);
+            float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
+            float radius = distance(centerX,centerY,points[ptr2[0]][0],
+                                    points[ptr2[0]][1]);
+            if(pow((ptr[0]-centerX),2)+pow((ptr[1]-centerY),2)-pow(radius,2) < 0) {
+              int data[3];
+              data[0] = ptr2[0]; data[1] = ptr2[1]; data[2] = epart[j];
+              // MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
+
+              cout << "Sending MPI Message to designated processes" << endl;
+              cout << "-------------------------------------------" << endl;
+              cout << "msg is being sent to" << data[2] << endl;
+              MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
+              cout << "-------------------------------------------" << endl;
+              cout << endl;
+
+              pd.x = centerX;
+              pd.y = centerY;
+
+              cout << "Encroaches" << endl;
+              break;
+
+            }
           }
         }
       }
-
-      // Local cavity
-      Pnt pd = {ptr[0], ptr[1]};
-
-      //find shared edges of this process with other processes
-      //take common edges and check whether the circumcenter encroaches the segment
-      for(int i=0;i<edgeList.size()/3;i++) {
-        float centerX = midPoint(points[edgeList[3*i]][0],points[edgeList[3*i+1]][0]);
-        float centerY = midPoint(points[edgeList[3*i]][1],points[edgeList[3*i+1]][1]);
-        float radius = distance(centerX,centerY,points[edgeList[3*i]][0],
-                                points[edgeList[3*i]][1]);
-        if(pow((ptr[0]-centerX),2)+pow((ptr[1]-centerY),2)-pow(radius,2) < 0) {
-          int data[3];
-          data[0] = edgeList[3*i]; data[1] = edgeList[3*i+1]; data[2] = edgeList[3*i+2];
-          // MPI_Send(data,2,MPI_INT,edgeList[3*i+2],NULL,NULL);
-
-          cout << "Sending MPI Message to designated processes" << endl;
-          cout << "-------------------------------------------" << endl;
-          cout << "msg is being sent to" << data[2] << endl;
-          MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
-          cout << "-------------------------------------------" << endl;
-          cout << endl;
-
-          pd.x = centerX;
-          pd.y = centerY;
-
-          cout << "Encroaches" << endl;
-          break;
-
-        } else {
-        } // end of doesnot encroaches loop
-
-      } // end of each common edge check
       edgeList.clear();
 
       // local cavity creation
