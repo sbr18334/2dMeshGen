@@ -26,16 +26,12 @@ int main() {
         while (a > 0)
         {
             std::getline(infile, line);
-            std::istringstream iss(line);
+            std::istringstream issT(line);
             float b;
-            if (!(iss >> b)) { break; }
+            if (!(issT >> b)) { break; }
             partElements.push_back(b);
             a--;
         }
-        for(int i=0;i<partElements.size();i++)
-        cout << partElements[i] << endl;
-        cout << endl;
-        //get eind
         int m;
         std::getline(infile, line);
         std::istringstream iss2(line);
@@ -45,15 +41,12 @@ int main() {
         while (m > 0)
         {
             std::getline(infile, line);
-            std::istringstream iss2(line);
+            std::istringstream iss2T(line);
             float b;
-            if (!(iss2 >> b)) { break; }
+            if (!(iss2T >> b)) { break; }
             eind.push_back(b);
             m--;
         }
-        for(int i=0;i<eind.size();i++)
-        cout << eind[i] << endl;
-
         //get points
         int n;
         std::getline(infile, line);
@@ -64,9 +57,9 @@ int main() {
         while (n > 0)
         {
             std::getline(infile, line);
-            std::istringstream iss3(line);
+            std::istringstream iss3T(line);
             float b,c;
-            if (!(iss3 >> b >> c)) { break; }
+            if (!(iss3T >> b >> c)) { break; }
             vector<float> v;
             cout << b << c << endl;
             v.push_back(b);
@@ -79,13 +72,10 @@ int main() {
         // cout << points[i][0] << points[i][1] << endl;
         std::ofstream outfile ("../output/finalOutput.txt", ios_base::app);
         cout << "from here" << endl;
-        for(int i=0;i<partElements.size();i++) {
-            cout << points[eind[partElements[i]*3]][0] << "," <<points[eind[partElements[i]*3]][1] << endl;
-            cout << points[eind[partElements[i]*3+1]][0] << "," <<points[eind[partElements[i]*3+1]][1] << endl;
-            cout << points[eind[partElements[i]*3+2]][0] << "," <<points[eind[partElements[i]*3+2]][1] << endl;
-            outfile << points[eind[partElements[i]*3]][0] << "," <<points[eind[partElements[i]*3]][1] << endl;
-            outfile << points[eind[partElements[i]*3+1]][0] << "," <<points[eind[partElements[i]*3+1]][1] << endl;
-            outfile << points[eind[partElements[i]*3+2]][0] << "," <<points[eind[partElements[i]*3+2]][1] << endl;
+        for(int n=0;n<partElements.size();n++) {
+            outfile << points[eind[partElements[n]*3]][0] << "," <<points[eind[partElements[n]*3]][1] << endl;
+            outfile << points[eind[partElements[n]*3+1]][0] << "," <<points[eind[partElements[n]*3+1]][1] << endl;
+            outfile << points[eind[partElements[n]*3+2]][0] << "," <<points[eind[partElements[n]*3+2]][1] << endl;
         }
     }
 
