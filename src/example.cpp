@@ -12,6 +12,8 @@
 #include <mpi.h>
 #include <metis.h>
 
+#include <sys/time.h>
+
 // To compile and run
 // mpic++ -std=c++11 example.cpp -lmetis
 // mpirun -np 4 ./a.out
@@ -29,7 +31,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 0.3;
+float threshold2 = 2.1;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
    return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
@@ -127,16 +129,10 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
 {
   vector<int> trashTriangles;
   vector<int> trashIndices;
-  cout << "PE size:" << partElements.size();
   for(int i=0;i<partElements.size();i++) {
-    cout << "PE:" << partElements[i] << " " << eind[partElements[i]*3] 
-    << " " << eind[partElements[i]*3+1] << " " << eind[partElements[i]*3+2];
     Pnt pa = {points[eind[partElements[i]*3]][0],points[eind[partElements[i]*3]][1]};
     Pnt pb = {points[eind[partElements[i]*3+1]][0],points[eind[partElements[i]*3+1]][1]};
     Pnt pc = {points[eind[partElements[i]*3+2]][0],points[eind[partElements[i]*3+2]][1]};
-    cout << pa.x << " " << pa.y << " " 
-    << pb.x << " " <<  pb.y << " " << 
-     pc.x <<  " " << pc.y <<  " " << pd.x <<  " " << pd.y << endl;
     if(inCircle(pa,pb,pc,pd)) {
       int a[3] = {eind[partElements[i]*3], eind[partElements[i]*3+1], eind[partElements[i]*3+2]};
       trashTriangles.insert(trashTriangles.end(), a, a+3);
@@ -144,16 +140,11 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     }
   }
 
-  cout << "TT:" << trashTriangles.size() << endl;
-
   vector<int> newEdgelist;
   for(int i=0;i<trashTriangles.size()/3;i++) {
-    newEdgelist.push_back(trashTriangles[3*i]);
-    newEdgelist.push_back(trashTriangles[3*i+1]);
-    newEdgelist.push_back(trashTriangles[3*i+2]);
-    newEdgelist.push_back(trashTriangles[3*i]);
-    newEdgelist.push_back(trashTriangles[3*i+1]);
-    newEdgelist.push_back(trashTriangles[3*i+2]);
+    int a[6] = {trashTriangles[3*i], trashTriangles[3*i+1], trashTriangles[3*i+2],
+    trashTriangles[3*i], trashTriangles[3*i+1], trashTriangles[3*i+2]};
+    newEdgelist.insert(newEdgelist.end(), a, a+6);
     // find all the unique edges between these set of triangles
   }
 
@@ -183,9 +174,6 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   points.push_back({pd.x, pd.y});
   nVertices++;
 
-  cout << "Number of vertices:" << nVertices << endl;
-  cout << "New edgelist size:" << newEdgelist.size() << endl;
-
   // add the remaining edges to cc to form triangles
   for(int i=0;i<newEdgelist.size()/2;i++) {
     // push back all three vertices
@@ -196,7 +184,7 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
     }
     int a[3] = {newEdgelist[2*i], newEdgelist[2*i+1], newVertexId};
     eind.insert(eind.end(), a, a+3);
-    cout << "Added for:" << process_Rank << (eind.size()/3)-1;
+    // cout << "Added for:" << process_Rank << (eind.size()/3)-1;
     partElements.push_back((eind.size()/3)-1);
     epart[(eind.size()/3)-1] = process_Rank;
   }
@@ -209,19 +197,21 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   newEdgelist.clear();
   trashTriangles.clear();
   trashIndices.clear();
+  trashEdges.clear();
 }
 
 int main(int argc, char** argv)
 {
-
+struct timeval  tv1, tv2;
+gettimeofday(&tv1, NULL);
   //Number of processes
   int nProcesses = 4;
 
   ///////////////////////////////////////////////////////////////
   // partmeshNodal
   ///////////////////////////////////////////////////////////////
-  int nVertices = 134;
-  idx_t nElements = 210;
+  int nVertices = 33343;
+  idx_t nElements = 64125;
   idx_t nParts = nProcesses;
 
   idx_t objval;
@@ -230,17 +220,16 @@ int main(int argc, char** argv)
   std::vector<idx_t> recpart(nVertices, 0);
 
   std::vector<idx_t> eind;
-  std::vector<idx_t> eptr;
-
-  std::ifstream infile("../input/A2.1.ele");
+  idx_t eind1[nElements*3];
+  idx_t eptr[nElements+1];
+  std::ifstream infile("../input/A.1.ele");
   std::string line;
   std::getline(infile, line);
   std::istringstream iss(line);
   int a,b,c;
   if (!(iss >> a >> b >> c)) {}
-  cout << a;
-  eptr.push_back(a);
   int count = 0;
+  int eindIndex = 0;
   while (a > 0)
   {
     std::getline(infile, line);
@@ -248,18 +237,23 @@ int main(int argc, char** argv)
     int a2, b, c, d;
     if (!(iss >> a2 >> b >> c >> d)) { break; }
     int v[3] = {b-1, c-1, d-1};
-    eind.insert(eind.end(), v, v+3);
-    eptr.push_back(3*count);
+    // eind.insert(eind.end(), v, v+3);
+    eind1[eindIndex] = b-1;eindIndex++;
+    eind1[eindIndex] = c-1;eindIndex++;
+    eind1[eindIndex] = d-1;eindIndex++;
     a--;count++;
   }
-
-  std::ifstream infile2("../input/A2.1.node");
+  for(int i=0;i<=count;i++){
+    eptr[i] = i*3;
+  }
+  // eptr[0] = 210;
+  std::ifstream infile2("../input/A.1.node");
   std::string line2;
   std::getline(infile2, line2);
   std::istringstream iss2(line2);
   int a_c;
   if (!(iss2 >> a_c)) {}
-  cout << a_c;
+//   cout << a_c;
   while (a_c > 0)
   {
     std::getline(infile2, line2);
@@ -270,10 +264,35 @@ int main(int argc, char** argv)
     points.push_back(v);
     a_c--;
   }
+  idx_t options[METIS_NOPTIONS];
+  METIS_SetDefaultOptions(options);
+  // options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
+  // options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
+  // options[METIS_OPTION_CONTIG] = 1;
+  idx_t *edgecut;
+  idx_t *npt;
+  npt = (idx_t *)malloc(nVertices*10);
+  idx_t *xadj, *adjncy;
+  idx_t pnumflag = 0;
+  idx_t ncommon = 2;
+  idx_t ncon=1;
+  idx_t nparts = nProcesses;
+  idx_t objvalue;
+  xadj =  (idx_t *) malloc(nVertices*2);
+  adjncy =  (idx_t *) malloc(20*nVertices);
 
-  int ret2 = METIS_PartMeshNodal( 
-    &nElements, &nVertices, eptr.data(), eind.data(), NULL, NULL,
-    &nParts, NULL, NULL, &objval, epart.data(), npart.data());
+  METIS_MeshToDual(&nElements, &nVertices, eptr, eind1, &ncommon, &pnumflag, &xadj, &adjncy);
+
+  METIS_PartGraphKway(&nElements, &ncon, xadj, adjncy, NULL, NULL, NULL, &nparts,
+  NULL, NULL, options, &objvalue, npt);
+
+  for(int i=0;i<nElements*3;i++) {
+    eind.push_back(eind1[i]);
+  }
+
+  delete xadj;
+  delete adjncy;
+
   ////////////////////////////////////////////////////////////////
   // mpi process
   // message between and parallelization between threads
@@ -295,8 +314,8 @@ int main(int argc, char** argv)
   ///////////////////////////////////////////////////////////////
   if(process_Rank == 0){
     cout << endl <<"----------Elements Partition-------" << endl;
-    for(unsigned part_i = 0; part_i < epart.size(); part_i++){
-      std::cout << "Element " << part_i << " Allotted to the P" << epart[part_i] << std::endl;
+    for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
+      std::cout << "Element " << part_i << " Allotted to the P" << npt[part_i] << std::endl;
     }
   }
 
@@ -309,14 +328,19 @@ int main(int argc, char** argv)
       partNodes.push_back(part_i);
     }
   }
-  for(unsigned part_i = 0; part_i < epart.size(); part_i++){
-    if(epart[part_i] == process_Rank) {
+  for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
+    if(npt[part_i] == process_Rank) {
       partElements.push_back(part_i);
     }
   }
+  
+  delete npt;
+  npart.clear();
+  recpart.clear();
+
+  int triangleCount = eind.size()/3;
+
   for(int i=0;i<partElements.size();i++) {
-    // if(partElements[i]>60) // fix here
-    // break;
     //vertices of that triangle
     float Px = points[eind[partElements[i]*3]][0];
     float Py = points[eind[partElements[i]*3]][1];
@@ -336,6 +360,8 @@ int main(int argc, char** argv)
     cout << "circumRadius/shortest" << circumRadius/shortest << endl;
     cout << "area" << area << endl;
 
+    //int triangleCount = eind.size()/3;
+
     ///////////////////////////////////////////////////////////////
     // obtaining bad triangles
     ///////////////////////////////////////////////////////////////
@@ -343,23 +369,17 @@ int main(int argc, char** argv)
 
       //circumcenter co-ordinates
       float* ptr = circumcenter(Px,Py,Qx,Qy,Rx,Ry,x,y,z);
-      int triangleCount = eind.size()/3;
-
-      //complexity verify
+      
       std::vector<idx_t> edgeList;
-      for(int i=0;i<triangleCount;i++) {
-        if(epart[i] == process_Rank){
-          for(int j=0;j<triangleCount;j++) {
-            //check whether the triangles have a common edge
-            if(epart[j] != process_Rank){
-              int* ptr2 = checkCommonEdge(eind[3*i],eind[3*i+1],eind[3*i+2],
-                              eind[3*j],eind[3*j+1],eind[3*j+2]);
-              if(!(ptr2[0] == -999 && ptr2[1] == -999)){
-                edgeList.push_back(ptr2[0]);
-                edgeList.push_back(ptr2[1]);
-                edgeList.push_back(epart[j]);
-              }
-            }
+      for(int j=0;j<triangleCount;j++) {
+        //check whether the triangles have a common edge
+        if(epart[j] != process_Rank){
+          int* ptr2 = checkCommonEdge(eind[3*partElements[i]],eind[3*partElements[i]+1],eind[3*partElements[i]+2],
+                        eind[3*j],eind[3*j+1],eind[3*j+2]);
+          if(!(ptr2[0] == -999 && ptr2[1] == -999)){
+            edgeList.push_back(ptr2[0]);
+            edgeList.push_back(ptr2[1]);
+            edgeList.push_back(epart[j]);
           }
         }
       }
@@ -396,6 +416,7 @@ int main(int argc, char** argv)
         } // end of doesnot encroaches loop
 
       } // end of each common edge check
+      edgeList.clear();
 
       // local cavity creation
       cout << pd.x << pd.y << "up:" << process_Rank << endl;
@@ -466,9 +487,18 @@ int main(int argc, char** argv)
       }
     }
 }
+  partElements.clear();
+  epart.clear();
+  eind.clear();
+  points.clear();
 
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
-  
+
+gettimeofday(&tv2, NULL);
+
+printf ("Total time = %f seconds\n",
+         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+         (double) (tv2.tv_sec - tv1.tv_sec));
   return 0;
 }
