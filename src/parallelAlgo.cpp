@@ -31,7 +31,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 2.1;
+float threshold2 = 2.2;
 
 bool ccw (float ax, float ay, float bx, float by, float cx, float cy) {
     return (bx - ax)*(cy - ay)-(cx - ax)*(by - ay) > 0;
@@ -92,6 +92,15 @@ float triangle_area(float a, float b, float c)
 float midPoint(float a, float b)
 {
   return (a+b)/2;
+}
+
+void broadcast(int nProcesses, int process_Rank) {
+  int data[3] = {10, 11, 12};
+  for(int i=0;i<nProcesses;i++) {
+    if(i == process_Rank)
+      continue;
+    MPI_Send(data, 3, MPI_INT, i, 2, MPI_COMM_WORLD);
+  }
 }
 
 int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
@@ -215,6 +224,21 @@ void localCavityCreation(vector<int> &partElements, vector<int> &eind, int &nVer
   trashTriangles.clear();
   trashIndices.clear();
   trashEdges.clear();
+}
+
+void splitMessage(vector<int> &partElements, vector<int> &eind, int &nVertices, vector<vector<float>> &points, vector<int> &epart, int process_Rank, int val[3]) {
+  Pnt pd;
+  pd.x = midPoint(points[val[0]][0],points[val[1]][0]);
+  pd.y = midPoint(points[val[0]][1],points[val[1]][1]);
+  cout << pd.x << pd.y << "down:" << process_Rank << endl;
+  bool boolean = true;
+  for(int i=0;i<points.size();i++) {
+    if(pd.x == points[i][0] && pd.y == points[i][1]) {
+      boolean = false;
+    }
+  }
+  if(boolean)
+  localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
 }
 
 int main(int argc, char** argv)
@@ -435,12 +459,7 @@ gettimeofday(&tv1, NULL);
 
   } // end of each triangle loop check
 
-  int data[3] = {10, 11, 12};
-  for(int i=0;i<nProcesses;i++) {
-    if(i == process_Rank)
-      continue;
-    MPI_Send(data, 3, MPI_INT, i, 2, MPI_COMM_WORLD);
-  }
+  broadcast(nProcesses, process_Rank);
 
   while (1) {
     MPI_Status status;
@@ -448,19 +467,8 @@ gettimeofday(&tv1, NULL);
     MPI_Recv(val, 3, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     cout << "----------------------------------------" << endl;
     printf("root recev %d,%d from %d with tag = %d\n" , val[0], val[1] , status.MPI_SOURCE , status.MPI_TAG );fflush(stdout);
-    Pnt pd;
     if(status.MPI_TAG != 2) {
-      pd.x = midPoint(points[val[0]][0],points[val[1]][0]);
-      pd.y = midPoint(points[val[0]][1],points[val[1]][1]);
-      cout << pd.x << pd.y << "down:" << process_Rank << endl;
-      bool boolean = true;
-      for(int i=0;i<points.size();i++) {
-        if(pd.x == points[i][0] && pd.y == points[i][1]) {
-          boolean = false;
-        }
-      }
-      if(boolean)
-      localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
+      splitMessage(partElements, eind, nVertices, points, epart, process_Rank, val);
     }
 
     if (status.MPI_TAG == 2){

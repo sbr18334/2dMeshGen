@@ -23,10 +23,7 @@ int main() {
         std::getline(infile, line);
         std::istringstream iss(line);
         float a2, b, c, d;
-        if (!(iss >> a2 >> b >> c >> d)) { break; } // error
-
-        // process pair (a,b)
-        // cout << a2 << b << c << endl;
+        if (!(iss >> a2 >> b >> c >> d)) { break; }
         vector<float> v;
         v.push_back(b);
         v.push_back(c);
@@ -59,27 +56,12 @@ int main() {
         a--;
     }
 
-    // for(int i=0;i<elements.size();i++)
-    // cout << elements[i][0] << elements[i][1] << elements[i][2] << endl;
-
     std::ofstream outfile ("../output/finalInput.txt", ios_base::app);
-    // vector<float> finalOP;
+
     for(int i=0;i<elements.size();i++) {
-        // finalOP.push_back(points[elements[i][0]-1][0]);
-        // finalOP.push_back(points[elements[i][0]-1][1]);
-        // finalOP.push_back(points[elements[i][1]-1][0]);
-        // finalOP.push_back(points[elements[i][1]-1][1]);
-        // finalOP.push_back(points[elements[i][2]-1][0]);
-        // finalOP.push_back(points[elements[i][2]-1][1]);
         outfile << points[elements[i][0]-1][0] << "," <<points[elements[i][0]-1][1] << endl;
         outfile << points[elements[i][1]-1][0] << "," <<points[elements[i][1]-1][1] << endl;
         outfile << points[elements[i][2]-1][0] << "," <<points[elements[i][2]-1][1] << endl;
     }
-
-    // float arr[finalOP.size()];
-    // for(int i=0;i<finalOP.size();i++){
-    //     arr[i] = finalOP[i];
-    // }
-
     return 0;
 }

@@ -68,8 +68,6 @@ int main() {
             n--;
         }
 
-        // for(int i=0;i<points.size();i++)
-        // cout << points[i][0] << points[i][1] << endl;
         std::ofstream outfile ("../output/finalOutput.txt", ios_base::app);
         cout << "from here" << endl;
         for(int n=0;n<partElements.size();n++) {
