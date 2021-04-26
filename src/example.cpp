@@ -100,23 +100,27 @@ float midPoint(float a, float b)
 
 int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
 {
+  vector<int> a;
+  int aTemp[3] = {a1, a2, a3};
+  vector<int> b;
+  int bTemp[3] = {b1, b2, b3};
+  a.insert(a.end(), aTemp, aTemp+3);
+  b.insert(b.end(), bTemp, bTemp+3);
+  sort(a.begin(), a.end(), greater<int>());
+  sort(b.begin(), b.end(), greater<int>());
   int* arr = new int[2];
-  if((a1==b1 && a2 == b2) || (a1 == b2 && a2 == b1) || 
-     (a1==b2 && a2 == b3) || (a1 == b3 && a2 == b2) ||
-     (a1==b1 && a2 == b3) || (a1 == b3 && a2 == b1)) {
-      arr[0] = a1; arr[1] = a2;
+  if((a[0]==b[0] && a[1] == b[1]) || (a[0] == b[1] && a[1] == b[2]) ||
+     (a[0]==b[0] && a[1] == b[2])) {
+      arr[0] = a[0]; arr[1] = a[1];
       return arr;
   }
-  if((a3==b1 && a2 == b2) || (a3 == b2 && a2 == b1) || 
-     (a3==b2 && a2 == b3) || (a3 == b3 && a2 == b2) ||
-     (a3==b1 && a2 == b3) || (a3 == b3 && a2 == b1)) {
-      arr[0] = a2; arr[1] = a3;
+  if((a[0]==b[0] && a[2] == b[1]) || (a[0]==b[1] && a[2] == b[2]) ||
+     (a[0]==b[0] && a[2] == b[2])) {
+      arr[0] = a[0]; arr[1] = a[2];
       return arr;
   }
-  if((a1==b1 && a3 == b2) || (a1 == b2 && a3 == b1) || 
-     (a1==b2 && a3 == b3) || (a1 == b3 && a3 == b2) ||
-     (a1==b1 && a3 == b3) || (a1 == b3 && a3 == b1)) {
-      arr[0] = a1; arr[1] = a3;
+  if((a[1]==b[0] && a[2] == b[1]) || (a[1]==b[1] && a[2] == b[2])) {
+      arr[0] = a[0]; arr[1] = a[2];
       return arr;
   }
   else {
