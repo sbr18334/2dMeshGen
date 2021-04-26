@@ -31,11 +31,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 2;
-
-float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
-   return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
-}
+float threshold2 = 2.2;
 
 bool ccw (float ax, float ay, float bx, float by, float cx, float cy) {
     return (bx - ax)*(cy - ay)-(cx - ax)*(by - ay) > 0;
@@ -250,14 +246,12 @@ gettimeofday(&tv1, NULL);
   for(int i=0;i<=count;i++){
     eptr[i] = i*3;
   }
-  // eptr[0] = 210;
   std::ifstream infile2("../input/A.1.node");
   std::string line2;
   std::getline(infile2, line2);
   std::istringstream iss2(line2);
   int a_c;
   if (!(iss2 >> a_c)) {}
-//   cout << a_c;
   while (a_c > 0)
   {
     std::getline(infile2, line2);
@@ -312,12 +306,12 @@ gettimeofday(&tv1, NULL);
   // To compile: g++ -std=c++11 metis_example.cpp -lmetis
   // To run: ./metis_example
   ///////////////////////////////////////////////////////////////
-  if(process_Rank == 0){
-    cout << endl <<"----------Elements Partition-------" << endl;
-    for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
-      std::cout << "Element " << part_i << " Allotted to the P" << npt[part_i] << std::endl;
-    }
-  }
+  // if(process_Rank == 0){
+  //   cout << endl <<"----------Elements Partition-------" << endl;
+  //   for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
+  //     std::cout << "Element " << part_i << " Allotted to the P" << npt[part_i] << std::endl;
+  //   }
+  // }
 
   int num_of_DONE = 0;
   vector<int> partNodes;
@@ -357,8 +351,8 @@ gettimeofday(&tv1, NULL);
     float area = triangle_area(x,y,z);
     float circumRadius = x*y*z/(4*area);
 
-    cout << "circumRadius/shortest" << circumRadius/shortest << endl;
-    cout << "area" << area << endl;
+    // cout << "circumRadius/shortest" << circumRadius/shortest << endl;
+    // cout << "area" << area << endl;
 
     //int triangleCount = eind.size()/3;
 
@@ -409,7 +403,7 @@ gettimeofday(&tv1, NULL);
       edgeList.clear();
 
       // local cavity creation
-      cout << pd.x << pd.y << "up:" << process_Rank << endl;
+      // cout << pd.x << pd.y << "up:" << process_Rank << endl;
       bool boolean = true;
       for(int m=0;m<points.size();m++) {
         if(pd.x == points[m][0] && pd.y == points[m][1]) {
@@ -444,7 +438,7 @@ gettimeofday(&tv1, NULL);
     if(status.MPI_TAG != 2) {
       pd.x = midPoint(points[val[0]][0],points[val[1]][0]);
       pd.y = midPoint(points[val[0]][1],points[val[1]][1]);
-      cout << pd.x << pd.y << "down:" << process_Rank << endl;
+      // cout << pd.x << pd.y << "down:" << process_Rank << endl;
       bool boolean = true;
       for(int i=0;i<points.size();i++) {
         if(pd.x == points[i][0] && pd.y == points[i][1]) {
