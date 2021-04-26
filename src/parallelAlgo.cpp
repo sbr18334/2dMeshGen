@@ -151,9 +151,9 @@ void writeToFiles(vector<int> &partElements, vector<int> &eind, vector<vector<fl
   }
 }
 
-void sendMessage(float ptr0, float ptr1, float centerX,
-  float centerY, float radius, int desgId, int data1, int data2) {
-  if(pow((ptr0-centerX),2)+pow((ptr1-centerY),2)-pow(radius,2) < 0) {
+Pnt sendMessage(float centerX,
+  float centerY, float radius, int desgId, int data1, int data2 , Pnt pd) {
+  if(pow((pd.x-centerX),2)+pow((pd.y-centerY),2)-pow(radius,2) < 0) {
     int data[3];
     data[0] = data1; data[1] = data2; data[2] = desgId;
 
@@ -165,7 +165,10 @@ void sendMessage(float ptr0, float ptr1, float centerX,
     cout << endl;
 
     cout << "Encroaches" << endl;
+    pd.x = centerX;
+    pd.y = centerY;
   }
+  return pd;
 }
 
 bool getBool(int x, int y, vector<vector<float>> &points) {
@@ -455,9 +458,7 @@ gettimeofday(&tv1, NULL);
             float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
             float radius = distance(centerX,centerY,points[ptr2[0]][0],
                                     points[ptr2[0]][1]);
-            sendMessage(ptr[0], ptr[1], centerX, centerY, radius, epart[j], ptr2[0], ptr2[1]);
-            pd.x = centerX;
-            pd.y = centerY;
+            pd = sendMessage(centerX, centerY, radius, epart[j], ptr2[0], ptr2[1], pd);
           }
         }
       }
