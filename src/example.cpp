@@ -31,7 +31,7 @@ vector<int> XS;
 vector<int> YS;
 
 float threshold1 = 3;
-float threshold2 = 2.1;
+float threshold2 = 2;
 
 float triangleArea(Pnt p1, Pnt p2, Pnt p3) {         //find area of triangle formed by p1, p2 and p3
    return abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
@@ -237,13 +237,13 @@ gettimeofday(&tv1, NULL);
   while (a > 0)
   {
     std::getline(infile, line);
-    std::istringstream iss(line);
-    int a2, b, c, d;
-    if (!(iss >> a2 >> b >> c >> d)) { break; }
+    std::istringstream issT(line);
+    int a2, b2, c2, d;
+    if (!(issT >> a2 >> b >> c >> d)) { break; }
     int v[3] = {b-1, c-1, d-1};
     // eind.insert(eind.end(), v, v+3);
-    eind1[eindIndex] = b-1;eindIndex++;
-    eind1[eindIndex] = c-1;eindIndex++;
+    eind1[eindIndex] = b2-1;eindIndex++;
+    eind1[eindIndex] = c2-1;eindIndex++;
     eind1[eindIndex] = d-1;eindIndex++;
     a--;count++;
   }
@@ -261,19 +261,15 @@ gettimeofday(&tv1, NULL);
   while (a_c > 0)
   {
     std::getline(infile2, line2);
-    std::istringstream iss2(line2);
-    float a2, b, c, d;
-    if (!(iss2 >> a2 >> b >> c >> d)) { break; }
-    vector<float> v = {b, c};
+    std::istringstream iss2T(line2);
+    float a2, b3, c3, d;
+    if (!(iss2T >> a2 >> b3 >> c3 >> d)) { break; }
+    vector<float> v = {b3, c3};
     points.push_back(v);
     a_c--;
   }
   idx_t options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
-  // options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY;
-  // options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL;
-  // options[METIS_OPTION_CONTIG] = 1;
-  idx_t *edgecut;
   idx_t *npt;
   npt = (idx_t *)malloc(nVertices*10);
   idx_t *xadj, *adjncy;
@@ -304,7 +300,7 @@ gettimeofday(&tv1, NULL);
   // To run: mpic++ hello_world_mpi.cpp -o hello_world_mpi
   // To execute: mpirun -np 2 ./hello_world_mpi
   ////////////////////////////////////////////////////////////////
-  int process_Rank, size_Of_Cluster, message_Item;
+  int process_Rank, size_Of_Cluster;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &size_Of_Cluster);
@@ -384,9 +380,6 @@ gettimeofday(&tv1, NULL);
           int* ptr2 = checkCommonEdge(eind[3*partElements[i]],eind[3*partElements[i]+1],eind[3*partElements[i]+2],
                         eind[3*j],eind[3*j+1],eind[3*j+2]);
           if(!(ptr2[0] == -999 && ptr2[1] == -999)){
-            // edgeList.push_back(ptr2[0]);
-            // edgeList.push_back(ptr2[1]);
-            // edgeList.push_back(epart[j]);
             float centerX = midPoint(points[ptr2[0]][0],points[ptr2[1]][0]);
             float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
             float radius = distance(centerX,centerY,points[ptr2[0]][0],
@@ -418,8 +411,8 @@ gettimeofday(&tv1, NULL);
       // local cavity creation
       cout << pd.x << pd.y << "up:" << process_Rank << endl;
       bool boolean = true;
-      for(int i=0;i<points.size();i++) {
-        if(pd.x == points[i][0] && pd.y == points[i][1]) {
+      for(int m=0;m<points.size();m++) {
+        if(pd.x == points[m][0] && pd.y == points[m][1]) {
           boolean = false;
         }
       }
