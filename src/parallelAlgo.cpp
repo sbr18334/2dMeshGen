@@ -151,6 +151,33 @@ void writeToFiles(vector<int> &partElements, vector<int> &eind, vector<vector<fl
   }
 }
 
+void sendMessage(float ptr0, float ptr1, float centerX,
+  float centerY, float radius, int desgId, int data1, int data2) {
+  if(pow((ptr0-centerX),2)+pow((ptr1-centerY),2)-pow(radius,2) < 0) {
+    int data[3];
+    data[0] = data1; data[1] = data2; data[2] = desgId;
+
+    cout << "Sending MPI Message to designated processes" << endl;
+    cout << "-------------------------------------------" << endl;
+    cout << "msg is being sent to" << data[2] << endl;
+    MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
+    cout << "-------------------------------------------" << endl;
+    cout << endl;
+
+    cout << "Encroaches" << endl;
+  }
+}
+
+bool getBool(int x, int y, vector<vector<float>> &points) {
+  bool boolean = true;
+  for(int m=0;m<points.size();m++) {
+    if(x == points[m][0] && y == points[m][1]) {
+      boolean = false;
+    }
+  }
+  return boolean;
+}
+
 float* getMetrics(vector<vector<float>> &points, vector<int> &eind, vector<int> &partElements, int i) {
   float Px = points[eind[partElements[i]*3]][0];
   float Py = points[eind[partElements[i]*3]][1];
@@ -428,23 +455,9 @@ gettimeofday(&tv1, NULL);
             float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
             float radius = distance(centerX,centerY,points[ptr2[0]][0],
                                     points[ptr2[0]][1]);
-            if(pow((ptr[0]-centerX),2)+pow((ptr[1]-centerY),2)-pow(radius,2) < 0) {
-              int data[3];
-              data[0] = ptr2[0]; data[1] = ptr2[1]; data[2] = epart[j];
-
-              cout << "Sending MPI Message to designated processes" << endl;
-              cout << "-------------------------------------------" << endl;
-              cout << "msg is being sent to" << data[2] << endl;
-              MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
-              cout << "-------------------------------------------" << endl;
-              cout << endl;
-
-              pd.x = centerX;
-              pd.y = centerY;
-
-              cout << "Encroaches" << endl;
-              break;
-            }
+            sendMessage(ptr[0], ptr[1], centerX, centerY, radius, epart[j], ptr2[0], ptr2[1]);
+            pd.x = centerX;
+            pd.y = centerY;
           }
         }
       }
@@ -452,12 +465,7 @@ gettimeofday(&tv1, NULL);
 
       // local cavity creation
       cout << pd.x << pd.y << "up:" << process_Rank << endl;
-      bool boolean = true;
-      for(int m=0;m<points.size();m++) {
-        if(pd.x == points[m][0] && pd.y == points[m][1]) {
-          boolean = false;
-        }
-      }
+      bool boolean = getBool(pd.x, pd.y, points);
       if(boolean)
       localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
       cout << endl << "Out of local cavity" << endl;
