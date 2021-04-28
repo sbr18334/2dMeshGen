@@ -134,6 +134,15 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
   }
 }
 
+float* getParams(int* ptr2, vector<vector<float>> &points){
+  float centerX = midPoint(points[ptr2[0]][0],points[ptr2[1]][0]);
+  float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
+  float radius = distance(centerX,centerY,points[ptr2[0]][0],
+                          points[ptr2[0]][1]);
+  static float temp[3] = {centerX, centerY, radius};
+  return temp;
+}
+
 void writeToFiles(vector<int> &partElements, vector<int> &eind, vector<vector<float>> &points, int process_Rank) {
   std::ofstream outfile ("../output/test"+std::to_string(process_Rank) +".txt");
   cout << partElements.size() << endl;
@@ -403,22 +412,11 @@ gettimeofday(&tv1, NULL);
   // To compile: g++ -std=c++11 metis_example.cpp -lmetis
   // To run: ./metis_example
   ///////////////////////////////////////////////////////////////
-  if(process_Rank == 0){
-    cout << endl <<"----------Elements Partition-------" << endl;
-    for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
-      std::cout << "Element " << part_i << " Allotted to the P" << npt[part_i] << std::endl;
-    }
-  }
 
   int num_of_DONE = 0;
   vector<int> partNodes;
   vector<int> partElements;
 
-  for(unsigned part_i = 0; part_i < npart.size(); part_i++){
-    if(npart[part_i] == process_Rank) {
-      partNodes.push_back(part_i);
-    }
-  }
   for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
     if(npt[part_i] == process_Rank) {
       partElements.push_back(part_i);
@@ -454,11 +452,8 @@ gettimeofday(&tv1, NULL);
           int* ptr2 = checkCommonEdge(eind[3*partElements[i]],eind[3*partElements[i]+1],eind[3*partElements[i]+2],
                         eind[3*j],eind[3*j+1],eind[3*j+2]);
           if(!(ptr2[0] == -999 && ptr2[1] == -999)){
-            float centerX = midPoint(points[ptr2[0]][0],points[ptr2[1]][0]);
-            float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
-            float radius = distance(centerX,centerY,points[ptr2[0]][0],
-                                    points[ptr2[0]][1]);
-            pd = sendMessage(centerX, centerY, radius, epart[j], ptr2[0], ptr2[1], pd);
+            float* param = getParams(ptr2, points);
+            pd = sendMessage(param[0], param[1], param[2], epart[j], ptr2[0], ptr2[1], pd);
           }
         }
       }
