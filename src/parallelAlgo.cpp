@@ -26,10 +26,6 @@ struct Pnt {
 
 vector<vector<float>> points;
 
-// Vertices XS - x coordinates & YS - y coordinates
-vector<int> XS;
-vector<int> YS;
-
 float threshold1 = 3;
 float threshold2 = 2.2;
 
@@ -66,14 +62,21 @@ float* circumcenter(float Px, float Py, float Qx, float Qy, float Rx, float Ry
                     ,float x, float y, float z)
 {
   float* arr = new float[2];
-  float angleA = acos((-x*x+y*y+z*z)/(2*y*z));
-  float angleB = acos((x*x-y*y+z*z)/(2*x*z));
-  float angleC = acos((x*x+y*y-z*z)/(2*x*y));
+  float x2 = x*x;
+  float y2 = y*y;
+  float z2 = z*z;
+  float angleA = acos((-x2+y2+z2)/(2*y*z));
+  float angleB = acos((x2-y2+z2)/(2*x*z));
+  float angleC = acos((x2+y2-z2)/(2*x*y));
 
-  arr[0] = (Px * sin(2*angleA) + Qx*sin(2*angleB) + Rx*sin(2*angleC))/
-           (sin(2*angleA) + sin(2*angleB) + sin(2*angleC));
-  arr[1] = (Py * sin(2*angleA) + Qy*sin(2*angleB) + Ry*sin(2*angleC))/
-           (sin(2*angleA) + sin(2*angleB) + sin(2*angleC));
+  float sinAngleA = sin(2*angleA);
+  float sinAngleB = sin(2*angleB);
+  float sinAngleC = sin(2*angleC);
+
+  arr[0] = (Px * sinAngleA + Qx * sinAngleB + Rx * sinAngleC)/
+           (sinAngleA + sinAngleB + sinAngleC);
+  arr[1] = (Py * sinAngleA + Qy * sinAngleB + Ry * sinAngleC)/
+           (sinAngleA + sinAngleB + sinAngleC);
            
   return arr;
 }
