@@ -134,6 +134,15 @@ int* checkCommonEdge(int a1, int a2, int a3, int b1, int b2, int b3)
   }
 }
 
+float* getParams(int* ptr2, vector<vector<float>> &points){
+  float centerX = midPoint(points[ptr2[0]][0],points[ptr2[1]][0]);
+  float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
+  float radius = distance(centerX,centerY,points[ptr2[0]][0],
+                          points[ptr2[0]][1]);
+  static float temp[3] = {centerX, centerY, radius};
+  return temp;
+}
+
 void writeToFiles(vector<int> &partElements, vector<int> &eind, vector<vector<float>> &points, int process_Rank) {
   std::ofstream outfile ("../output/test"+std::to_string(process_Rank) +".txt");
   cout << partElements.size() << endl;
@@ -149,6 +158,36 @@ void writeToFiles(vector<int> &partElements, vector<int> &eind, vector<vector<fl
   for(int i=0;i<points.size();i++){
     outfile << points[i][0] << " " << points[i][1] << endl;
   }
+}
+
+Pnt sendMessage(float centerX,
+  float centerY, float radius, int desgId, int data1, int data2 , Pnt pd) {
+  if(pow((pd.x-centerX),2)+pow((pd.y-centerY),2)-pow(radius,2) < 0) {
+    int data[3];
+    data[0] = data1; data[1] = data2; data[2] = desgId;
+
+    cout << "Sending MPI Message to designated processes" << endl;
+    cout << "-------------------------------------------" << endl;
+    cout << "msg is being sent to" << data[2] << endl;
+    MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
+    cout << "-------------------------------------------" << endl;
+    cout << endl;
+
+    cout << "Encroaches" << endl;
+    pd.x = centerX;
+    pd.y = centerY;
+  }
+  return pd;
+}
+
+bool getBool(int x, int y, vector<vector<float>> &points) {
+  bool boolean = true;
+  for(int m=0;m<points.size();m++) {
+    if(x == points[m][0] && y == points[m][1]) {
+      boolean = false;
+    }
+  }
+  return boolean;
 }
 
 float* getMetrics(vector<vector<float>> &points, vector<int> &eind, vector<int> &partElements, int i) {
@@ -373,22 +412,10 @@ gettimeofday(&tv1, NULL);
   // To compile: g++ -std=c++11 metis_example.cpp -lmetis
   // To run: ./metis_example
   ///////////////////////////////////////////////////////////////
-  if(process_Rank == 0){
-    cout << endl <<"----------Elements Partition-------" << endl;
-    for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
-      std::cout << "Element " << part_i << " Allotted to the P" << npt[part_i] << std::endl;
-    }
-  }
 
   int num_of_DONE = 0;
-  vector<int> partNodes;
   vector<int> partElements;
 
-  for(unsigned part_i = 0; part_i < npart.size(); part_i++){
-    if(npart[part_i] == process_Rank) {
-      partNodes.push_back(part_i);
-    }
-  }
   for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
     if(npt[part_i] == process_Rank) {
       partElements.push_back(part_i);
@@ -424,27 +451,8 @@ gettimeofday(&tv1, NULL);
           int* ptr2 = checkCommonEdge(eind[3*partElements[i]],eind[3*partElements[i]+1],eind[3*partElements[i]+2],
                         eind[3*j],eind[3*j+1],eind[3*j+2]);
           if(!(ptr2[0] == -999 && ptr2[1] == -999)){
-            float centerX = midPoint(points[ptr2[0]][0],points[ptr2[1]][0]);
-            float centerY = midPoint(points[ptr2[0]][1],points[ptr2[1]][1]);
-            float radius = distance(centerX,centerY,points[ptr2[0]][0],
-                                    points[ptr2[0]][1]);
-            if(pow((ptr[0]-centerX),2)+pow((ptr[1]-centerY),2)-pow(radius,2) < 0) {
-              int data[3];
-              data[0] = ptr2[0]; data[1] = ptr2[1]; data[2] = epart[j];
-
-              cout << "Sending MPI Message to designated processes" << endl;
-              cout << "-------------------------------------------" << endl;
-              cout << "msg is being sent to" << data[2] << endl;
-              MPI_Send(data,3,MPI_INT,data[2],1,MPI_COMM_WORLD);
-              cout << "-------------------------------------------" << endl;
-              cout << endl;
-
-              pd.x = centerX;
-              pd.y = centerY;
-
-              cout << "Encroaches" << endl;
-              break;
-            }
+            float* param = getParams(ptr2, points);
+            pd = sendMessage(param[0], param[1], param[2], epart[j], ptr2[0], ptr2[1], pd);
           }
         }
       }
@@ -452,12 +460,7 @@ gettimeofday(&tv1, NULL);
 
       // local cavity creation
       cout << pd.x << pd.y << "up:" << process_Rank << endl;
-      bool boolean = true;
-      for(int m=0;m<points.size();m++) {
-        if(pd.x == points[m][0] && pd.y == points[m][1]) {
-          boolean = false;
-        }
-      }
+      bool boolean = getBool(pd.x, pd.y, points);
       if(boolean)
       localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
       cout << endl << "Out of local cavity" << endl;
