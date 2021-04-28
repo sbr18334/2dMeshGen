@@ -307,21 +307,15 @@ void splitMessage(vector<int> &partElements, vector<int> &eind, int &nVertices, 
 
 int main(int argc, char** argv)
 {
-struct timeval  tv1, tv2;
-gettimeofday(&tv1, NULL);
-  //Number of processes
+  struct timeval  tv1, tv2;
+  gettimeofday(&tv1, NULL);
   int nProcesses = 4;
 
-  ///////////////////////////////////////////////////////////////
-  // partmeshNodal
-  ///////////////////////////////////////////////////////////////
   int nVertices = 33343;
   idx_t nElements = 64125;
 
   idx_t objval;
   std::vector<idx_t> epart(nElements, 0);
-  std::vector<idx_t> npart(nVertices, 0);
-  std::vector<idx_t> recpart(nVertices, 0);
 
   std::vector<idx_t> eind;
   idx_t eind1[nElements*3];
@@ -350,14 +344,12 @@ gettimeofday(&tv1, NULL);
   for(int i=0;i<=count;i++){
     eptr[i] = i*3;
   }
-  // eptr[0] = 210;
   std::ifstream infile2("../input/A.1.node");
   std::string line2;
   std::getline(infile2, line2);
   std::istringstream iss2(line2);
   int a_c;
   if (!(iss2 >> a_c)) {}
-//   cout << a_c;
   while (a_c > 0)
   {
     std::getline(infile2, line2);
@@ -370,12 +362,11 @@ gettimeofday(&tv1, NULL);
   }
   idx_t options[METIS_NOPTIONS];
   METIS_SetDefaultOptions(options);
-  idx_t *npt;
+  idx_t *npt, *xadj, *adjncy;
   npt = (idx_t *)malloc(nVertices*10);
-  idx_t *xadj, *adjncy;
   idx_t pnumflag = 0;
   idx_t ncommon = 2;
-  idx_t ncon=1;
+  idx_t ncon = 1;
   idx_t nparts = nProcesses;
   idx_t objvalue;
   xadj =  (idx_t *) malloc(nVertices*2);
@@ -393,25 +384,11 @@ gettimeofday(&tv1, NULL);
   delete xadj;
   delete adjncy;
 
-  ////////////////////////////////////////////////////////////////
-  // mpi process
-  // message between and parallelization between threads
-  ////////////////////////////////////////////////////////////////
-  // To run: mpic++ hello_world_mpi.cpp -o hello_world_mpi
-  // To execute: mpirun -np 2 ./hello_world_mpi
-  ////////////////////////////////////////////////////////////////
   int process_Rank, size_Of_Cluster;
 
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &size_Of_Cluster);
   MPI_Comm_rank(MPI_COMM_WORLD, &process_Rank);
-  ////////////////////////////////////////////////////////////////
-  // metis example
-  // To partition graphs or/and data.
-  ////////////////////////////////////////////////////////////////
-  // To compile: g++ -std=c++11 metis_example.cpp -lmetis
-  // To run: ./metis_example
-  ///////////////////////////////////////////////////////////////
 
   int num_of_DONE = 0;
   vector<int> partElements;
@@ -423,25 +400,18 @@ gettimeofday(&tv1, NULL);
   }
   
   delete npt;
-  npart.clear();
-  recpart.clear();
 
   int triangleCount = eind.size()/3;
 
   for(int i=0;i<partElements.size();i++) {
-    //vertices of that triangle
     float* temp = getMetrics(points, eind, partElements, i);
-
     ///////////////////////////////////////////////////////////////
     // obtaining bad triangles
     ///////////////////////////////////////////////////////////////
     if(temp[0] > threshold1 || temp[1] > threshold2) {
-
-      //circumcenter co-ordinates
       float* ptr = circumcenter(temp[2],temp[3],temp[4]
       ,temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
       
-      // Local cavity
       Pnt pd = {ptr[0], ptr[1]};
 
       std::vector<idx_t> edgeList;
@@ -457,18 +427,14 @@ gettimeofday(&tv1, NULL);
         }
       }
       edgeList.clear();
-
       // local cavity creation
       cout << pd.x << pd.y << "up:" << process_Rank << endl;
       bool boolean = getBool(pd.x, pd.y, points);
       if(boolean)
       localCavityCreation(partElements, eind, nVertices, points, pd, epart, process_Rank);
       cout << endl << "Out of local cavity" << endl;
-      
     } // end of each bad triangle loop check
-
     cout << endl;
-
   } // end of each triangle loop check
 
   broadcast(nProcesses, process_Rank);
@@ -500,9 +466,9 @@ gettimeofday(&tv1, NULL);
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
 
-gettimeofday(&tv2, NULL);
+  gettimeofday(&tv2, NULL);
 
-printf ("Total time = %f seconds\n",
+  printf ("Total time = %f seconds\n",
          (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
          (double) (tv2.tv_sec - tv1.tv_sec));
   return 0;
