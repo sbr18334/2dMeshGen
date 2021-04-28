@@ -21,9 +21,9 @@ int main() {
     while (a_c > 0)
     {
         std::getline(infile, line);
-        std::istringstream iss(line);
+        std::istringstream issT(line);
         float a2, b, c, d;
-        if (!(iss >> a2 >> b >> c >> d)) { break; }
+        if (!(issT >> a2 >> b >> c >> d)) { break; }
         vector<float> v;
         v.push_back(b);
         v.push_back(c);
@@ -42,11 +42,9 @@ int main() {
     while (a > 0)
     {
         std::getline(infile2, line2);
-        std::istringstream iss2(line2);
+        std::istringstream iss2T(line2);
         int a2, b, c, d;
-        if (!(iss2 >> a2 >> b >> c >> d)) { break; } // error
-
-        // process pair (a,b)
+        if (!(iss2T >> a2 >> b >> c >> d)) { break; }
         cout << a2 << b << c << d << endl;
         vector<int> v1;
         v1.push_back(b);
