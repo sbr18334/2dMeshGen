@@ -10,6 +10,16 @@
 
 using namespace std;
 
+void writeTo(vector<int> &partElements, vector<int> &eind, vector<vector<float> > &points){
+    std::ofstream outfile ("../output/finalOutput.txt", ios_base::app);
+    cout << "from here" << endl;
+    for(int n=0;n<partElements.size();n++) {
+        outfile << points[eind[partElements[n]*3]][0] << "," <<points[eind[partElements[n]*3]][1] << endl;
+        outfile << points[eind[partElements[n]*3+1]][0] << "," <<points[eind[partElements[n]*3+1]][1] << endl;
+        outfile << points[eind[partElements[n]*3+2]][0] << "," <<points[eind[partElements[n]*3+2]][1] << endl;
+    }
+}
+
 int main() {
     int nProcesses = 4;
     for(int i=0;i<nProcesses;i++){
@@ -18,10 +28,8 @@ int main() {
         std::getline(infile, line);
         std::istringstream iss(line);
 
-        //get partElements
-        int a;
+        int a, m ,n;
         if (!(iss >> a)) {}
-        cout << a;
         vector<int> partElements;
         while (a > 0)
         {
@@ -32,11 +40,9 @@ int main() {
             partElements.push_back(b);
             a--;
         }
-        int m;
         std::getline(infile, line);
         std::istringstream iss2(line);
         if (!(iss2 >> m)) {}
-        cout << m;
         vector<int> eind;
         while (m > 0)
         {
@@ -47,8 +53,6 @@ int main() {
             eind.push_back(b);
             m--;
         }
-        //get points
-        int n;
         std::getline(infile, line);
         std::istringstream iss3(line);
         if (!(iss3 >> n)) {}
@@ -61,21 +65,12 @@ int main() {
             float b,c;
             if (!(iss3T >> b >> c)) { break; }
             vector<float> v;
-            cout << b << c << endl;
             v.push_back(b);
             v.push_back(c);
             points.push_back(v);
             n--;
         }
-
-        std::ofstream outfile ("../output/finalOutput.txt", ios_base::app);
-        cout << "from here" << endl;
-        for(int n=0;n<partElements.size();n++) {
-            outfile << points[eind[partElements[n]*3]][0] << "," <<points[eind[partElements[n]*3]][1] << endl;
-            outfile << points[eind[partElements[n]*3+1]][0] << "," <<points[eind[partElements[n]*3+1]][1] << endl;
-            outfile << points[eind[partElements[n]*3+2]][0] << "," <<points[eind[partElements[n]*3+2]][1] << endl;
-        }
+        writeTo(partElements, eind, points);
     }
-
     return 0;
 }
