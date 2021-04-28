@@ -414,7 +414,6 @@ gettimeofday(&tv1, NULL);
   ///////////////////////////////////////////////////////////////
 
   int num_of_DONE = 0;
-  vector<int> partNodes;
   vector<int> partElements;
 
   for(unsigned part_i = 0; part_i < eind.size()/3; part_i++){
