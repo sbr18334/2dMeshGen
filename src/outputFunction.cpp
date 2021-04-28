@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void writeTo(vector<int> &partElements, vector<int> &eind, vector<vector<float> > &points){
+void writeTo(vector<int> &partElements, vector<int> eind, vector<vector<float> > points){
     std::ofstream outfile ("../output/finalOutput.txt", ios_base::app);
     cout << "from here" << endl;
     for(int n=0;n<partElements.size();n++) {
